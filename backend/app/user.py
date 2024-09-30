@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException,Response, Request
-from schemas import UserCreate,UserLogin
+from fastapi import APIRouter, Depends, HTTPException,Response, Request, Cookie
+from schemas import UserCreate,UserLogin,UserProfile
 from sqlalchemy.orm import Session
 from database import get_db
 from crud import create_user,get_user_by_email
@@ -7,6 +7,8 @@ from utils import create_access_token,create_refresh_token,verify_password,verif
 from datetime import timedelta
 from config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, SECRET_KEY, ALGORITHM
 from jose import jwt, JWTError
+from models import User
+import openai
 
 router = APIRouter()
 
@@ -106,3 +108,94 @@ def refresh_token(request: Request, response : Response, db: Session = Depends(g
     )
 
     return {"message": "Access token refreshed successfully"}
+
+
+def get_access_token(access_token: str = Cookie(None)):
+    if access_token is None:
+        raise HTTPException(status_code=401,detail="User tokens not found")
+    return access_token
+    
+@router.get("/profile")
+def get_profile(access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+    try:
+        # Decode the access token from jwt
+        payload = jwt.decode(access_token,SECRET_KEY,algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401,detail="Invalid access token")
+    except JWTError:
+        raise HTTPException(status_code=401,detail="Couldn't validate credentials")
+    
+    #Fetch user details from the database
+    user = db.query(User).filter(User.email == email).first()
+    
+    if user is None:
+        raise HTTPException(status_code=404,detail="User not found")
+    
+    # Return user details
+    return UserProfile(firstName = user.firstName, lastName = user.lastName,
+                       email = user.email, openApiToken = user.openapitoken)
+    
+
+@router.put("/profile")
+def update_profile(user_data: UserProfile, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Decode the access token from jwt
+        payload = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid access token")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Couldn't validate credentials")
+
+    # Update user details in the database
+    user = db.query(User).filter(User.email == email).first()
+    
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.firstName = user_data.firstName
+    user.lastName = user_data.lastName
+    user.email = user_data.email
+    user.openapitoken = user_data.openApiToken
+    db.commit()
+    
+    return {"message": "Profile updated successfully"}
+
+
+def get_email_from_cookie(access_token,db):
+    try:
+        # Decode the access token from jwt
+        payload = jwt.decode(access_token,SECRET_KEY,algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401,detail="Invalid access token")
+    except JWTError:
+        raise HTTPException(status_code=401,detail="Couldn't validate credentials")
+    
+    try:
+        # print(email)
+        #Fetch user details from the database
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=404,detail="User not found")
+        return user
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500,detail="Error finding User Details")
+    
+@router.get("/openai-token-check")
+def is_api_key_valid(access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+    try:
+        user = get_email_from_cookie(access_token,db)
+    except Exception as e:
+        print("Openai token check error: ",e)
+        raise HTTPException(status_code=500,detail="Token check failed")
+        
+    client = openai.OpenAI(api_key=user.openapitoken)
+    try:
+        client.models.list()
+    except openai.AuthenticationError:
+        raise HTTPException(status_code=401,detail="Invalid OpenAI token")        
+    return True
+    

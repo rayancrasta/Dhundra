@@ -10,6 +10,8 @@ class User(Base):
     lastName = Column(String, index=True)
     email = Column(String, unique=True, index=True)
     password = Column(String)
+    openapitoken = Column(String,unique=True,nullable=True)
 
+    
     
     
