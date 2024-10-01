@@ -79,7 +79,7 @@ const Profile = () => {
                     display: 'flex',
                     justifyContent: 'center', // Center horizontally
                     // alignItems: 'center', // Center vertically
-                    height: '100vh', // Full viewport height
+                    // height: '100vh', // Full viewport height
                     padding: 2,
                 }}
             >

@@ -32,8 +32,9 @@ const UserProfileCard = ({user,isEditing,formData,handleChange,setIsEditing,hand
     return (
         <Card
             sx={{
-                border: 'none', // Remove any outline
-                boxShadow: 'none', // Remove the default box shadow    
+                border: '1px solid',  // Add a border
+                borderColor: 'lightgrey',  // Set the border color to light grey
+                borderRadius: 1, // Remove the default box shadow    
             }}
         >
             <CardContent>
