@@ -54,7 +54,7 @@ const ResumeBuilder = () => {
     useEffect(() => {
         const fetchPersonalDetails = async () => {
             try {
-                const response = await axios.get("http://localhost:8000/personal_details");
+                const response = await axios.get("http://localhost:8000/user/personal-details",{ withCredentials: true });
                 setPersonalDetails(response.data);
             } catch (error) {
                 console.error("Error fetching personal details",error);
@@ -165,9 +165,9 @@ const ResumeBuilder = () => {
     
     const handleSavePersonalDetails = async () => {
         try {
-            await axios.post("http://localhost:8000/update_personal_details",personalDetails);
+            await axios.post("http://localhost:8000/user/personal-details",personalDetails, {withCredentials: true});
             setIsEditing(false);
-            alert("Personal details updated succesfully");
+            // alert("Personal details updated succesfully");
         } catch (error) {
             console.error("Error updating personal details",error)
         }
@@ -180,7 +180,7 @@ const ResumeBuilder = () => {
     }
 
     const handleSnackbarClose = () => {
-        setSnackbarMessage(false);
+        setSnackbarOpen(false);
     }
 
     const copyToClipboard = (text) => {
@@ -230,10 +230,9 @@ const ResumeBuilder = () => {
                     <PersonalDetails
                         personalDetails={personalDetails}
                         onDetailChange={handlePersonalDetailChange}
-                        jobDescription={jobDescription}
-                        onJobDescriptionChange={handleJobDescriptionChange}
-                        loading={loading}
-                        isUpdated={isUpdated}
+                        onSave={handleSavePersonalDetails}
+                        isEditing={isEditing}
+                        onEdit={() => setIsEditing(!isEditing)}
                         copyToClipboard={copyToClipboard}
                     />
                     </Grid>
@@ -262,7 +261,7 @@ const ResumeBuilder = () => {
             <SnackbarAlert
                 open={snackbarOpen}
                 onClose={() => setSnackbarOpen(false)}
-                message="PDF generated succesfully! "
+                message={snackbarMessage}
             />
 
         </div>

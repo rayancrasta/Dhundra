@@ -13,7 +13,7 @@ const UserProfileCard = ({user,isEditing,formData,handleChange,setIsEditing,hand
                     variant="outlined"
                     value={token}
                     onChange={handleChange}
-                    name="openApiToken"
+                    name="openaitoken"
                 />
             );
         } else {
@@ -58,7 +58,7 @@ const UserProfileCard = ({user,isEditing,formData,handleChange,setIsEditing,hand
                     
                     <Grid item xs={12}>
                         <Typography variant="h6" sx={{ color: 'primary' }}>OpenAI Token:</Typography>
-                        {renderOpenAIToken(formData.openApiToken)}
+                        {renderOpenAIToken(formData.openaitoken)}
                     </Grid>
                 </Grid>
                 
@@ -78,7 +78,7 @@ const UserProfileCard = ({user,isEditing,formData,handleChange,setIsEditing,hand
                     variant="outlined"
                     color="secondary"
                     onClick={handleTokenCheck}
-                    disabled={!formData.openApiToken || isEditing}
+                    disabled={!formData.openaitoken || isEditing}
                 >
                     Test OpenAI Token
                 </Button>

@@ -4,7 +4,7 @@ import { ContentCopy } from "@mui/icons-material";
 
 const PersonalDetails = ({ personalDetails, onDetailChange, onSave, isEditing, onEdit,copyToClipboard }) => (
   <Paper elevation={3} sx={{ padding: 3, marginTop: 3 }}>
-    <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#0056b3' }}>
+    <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
       Personal Details
     </Typography>
     {isEditing ? (
@@ -28,13 +28,20 @@ const PersonalDetails = ({ personalDetails, onDetailChange, onSave, isEditing, o
       <Box>
         {Object.keys(personalDetails).map((key) => (
           <Typography variant="body1" key={key}>
-            {key.charAt(0).toUpperCase() + key.slice(1)}: {personalDetails[key]}
-            <Tooltip title="Copy">
-              <IconButton onClick={() => copyToClipboard(personalDetails[key])}>
-                <ContentCopy />
-              </IconButton>
-            </Tooltip>
-          </Typography>
+          <Typography 
+            variant="body1" 
+            component="span" 
+            sx={{ fontWeight: 'bold', color: 'primary.main' }} // Set bold and primary color
+          >
+            {key.charAt(0).toUpperCase() + key.slice(1)}:
+          </Typography> 
+          {' '}{personalDetails[key]} {/* Add space between key and value */}
+          <Tooltip title="Copy">
+            <IconButton onClick={() => copyToClipboard(personalDetails[key])}>
+              <ContentCopy />  {/* the content copy button */}
+            </IconButton>
+          </Tooltip>
+        </Typography>
         ))}
         <Button variant="contained" onClick={onEdit} fullWidth sx={{ marginTop: 2 }}>
           Edit

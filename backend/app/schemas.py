@@ -17,5 +17,13 @@ class UserProfile(BaseModel):
     firstName: str
     lastName: str
     email: EmailStr
-    openApiToken: Optional[str]
+    openaitoken: Optional[str]
+    
+class ShortcutDetails(BaseModel):
+    github: Optional[str]
+    linkedin: Optional[str]
+    website: Optional[str]
+    blog: Optional[str]
+
+
     

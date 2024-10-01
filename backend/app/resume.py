@@ -56,7 +56,7 @@ def update_markdown_with_openai(api_key, resume_markdown, job_description):
     except Exception as e:
         # Catch-all for any unexpected errors
         print(f"Unexpected error: {str(e)}")
-        raise RuntimeError("An unexpected error occurred while updating the resume. Please try again.")
+        raise HTTPException(status_code=500, detail="Unexpected Error occured")
 
 
 @router.post("/update_resume")
@@ -66,8 +66,7 @@ async def update_resume(file: UploadFile, job_description: str = Form(...), acce
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
-        print(access_token)
-        print(user.email)
+
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized user.")
 
@@ -85,8 +84,10 @@ async def update_resume(file: UploadFile, job_description: str = Form(...), acce
         if not job_description:
             raise HTTPException(status_code=400, detail="Job description cannot be empty.")
 
+        if not user.openaitoken:
+            raise HTTPException(status_code=400, detail="OpenAI token not set")
         # Update resume using OpenAI
-        updated_markdown = update_markdown_with_openai(user.openapitoken, resume_markdown, job_description)
+        updated_markdown = update_markdown_with_openai(user.openaitoken, resume_markdown, job_description)
 
         # Log success
         logging.info(f"Resume successfully updated for user {user.email}")

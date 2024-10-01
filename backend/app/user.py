@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException,Response, Request, Cookie
-from schemas import UserCreate,UserLogin,UserProfile
+from schemas import UserCreate,UserLogin,UserProfile, ShortcutDetails
 from sqlalchemy.orm import Session
 from database import get_db
 from crud import create_user,get_user_by_email
@@ -7,7 +7,7 @@ from utils import create_access_token,create_refresh_token,verify_password,verif
 from datetime import timedelta
 from config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, SECRET_KEY, ALGORITHM
 from jose import jwt, JWTError
-from models import User
+from models import User,Shortcuts
 import openai
 
 router = APIRouter()
@@ -23,6 +23,7 @@ def student_signup(user: UserCreate, db: Session = Depends(get_db)):
             raise HTTPException(status_code=400, detail="Email already registered")
         
         create_user(db=db, user=user) # can raise error
+        
         return {"message": "User Signup Succesful"}
     
     except HTTPException as http_exception:
@@ -134,7 +135,7 @@ def get_profile(access_token: str = Depends(get_access_token),db: Session = Depe
     
     # Return user details
     return UserProfile(firstName = user.firstName, lastName = user.lastName,
-                       email = user.email, openApiToken = user.openapitoken)
+                       email = user.email, openaitoken = user.openaitoken)
     
 
 @router.put("/profile")
@@ -157,7 +158,7 @@ def update_profile(user_data: UserProfile, access_token: str = Depends(get_acces
     user.firstName = user_data.firstName
     user.lastName = user_data.lastName
     user.email = user_data.email
-    user.openapitoken = user_data.openApiToken
+    user.openaitoken = user_data.openaitoken
     db.commit()
     
     return {"message": "Profile updated successfully"}
@@ -192,10 +193,48 @@ def is_api_key_valid(access_token: str = Depends(get_access_token),db: Session =
         print("Openai token check error: ",e)
         raise HTTPException(status_code=500,detail="Token check failed")
         
-    client = openai.OpenAI(api_key=user.openapitoken)
+    client = openai.OpenAI(api_key=user.openaitoken)
     try:
         client.models.list()
     except openai.AuthenticationError:
         raise HTTPException(status_code=401,detail="Invalid OpenAI token")        
     return True
     
+@router.get("/personal-details")
+def get_shortcuts(access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+    try:
+        user = get_email_from_cookie(access_token,db)
+        email = user.email
+        
+        user_shortcut = db.query(Shortcuts).filter(Shortcuts.email == email).first()
+    except Exception as e:
+        print("Error getting shortcuts ",e)
+        raise HTTPException(status_code=500,detail="Error getting shortcuts ")
+    
+    return ShortcutDetails(github=user_shortcut.github,linkedin=user_shortcut.linkedin,website=user_shortcut.website,blog=user_shortcut.blog)
+
+@router.post("/personal-details")
+def get_shortcuts(shortcutdetails:ShortcutDetails,access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+    try:
+        user = get_email_from_cookie(access_token,db)
+        email = user.email
+        
+        
+        user_shortcut = db.query(Shortcuts).filter(Shortcuts.email == email).first()
+        
+        if not user_shortcut:
+            print("Error finding Shorcuts: ")
+            raise HTTPException(status_code=404, detail="No shortcuts found for the user")
+        
+        
+        user_shortcut.github = shortcutdetails.github
+        user_shortcut.linkedin = shortcutdetails.linkedin
+        user_shortcut.website = shortcutdetails.website
+        user_shortcut.blog = shortcutdetails.blog
+
+        db.commit()
+        db.refresh(user_shortcut)
+        
+    except Exception as e:
+        print("Error saving Shorcuts: ",e)
+        raise HTTPException(status_code=500, detail="Error saving shortcuts")

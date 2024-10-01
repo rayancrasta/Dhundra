@@ -7,7 +7,7 @@ from models import User
 from schemas import UserCreate
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
-from models import User
+from models import User,Shortcuts
 import bcrypt
 from utils import get_password_hash
 
@@ -25,6 +25,12 @@ def create_user(db: Session, user: UserCreate):
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
+        
+        shortcuts = Shortcuts(email=user.email)
+        db.add(shortcuts)
+        db.commit()
+        db.refresh(shortcuts)
+        
         return db_user
     except Exception as e:
         print("Signup Error: ",e)

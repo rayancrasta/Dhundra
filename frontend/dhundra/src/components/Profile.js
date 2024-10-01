@@ -14,7 +14,7 @@ const Profile = () => {
         firstName: '',
         lastName: '',
         email: '',
-        openApiToken: '',
+        openaitoken: '',
     });
     const [tokenTestResult, setTokenTestResult] = useState(null);
     const [isTokenValid, setIsTokenValid] = useState(null);
@@ -28,7 +28,7 @@ const Profile = () => {
                     firstName: response.data.firstName,
                     lastName: response.data.lastName,
                     email: response.data.email,
-                    openApiToken: response.data.openApiToken || 'Token not set',
+                    openaitoken: response.data.openaitoken || 'Token not set',
                 });
                 setLoading(false);
             } catch (err) {
