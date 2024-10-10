@@ -110,7 +110,6 @@ def refresh_token(request: Request, response : Response, db: Session = Depends(g
 
     return {"message": "Access token refreshed successfully"}
 
-
 def get_access_token(access_token: str = Cookie(None)):
     if access_token is None:
         raise HTTPException(status_code=401,detail="User tokens not found")
@@ -137,7 +136,6 @@ def get_profile(access_token: str = Depends(get_access_token),db: Session = Depe
     return UserProfile(firstName = user.firstName, lastName = user.lastName,
                        email = user.email, openaitoken = user.openaitoken)
     
-
 @router.put("/profile")
 def update_profile(user_data: UserProfile, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
@@ -162,7 +160,6 @@ def update_profile(user_data: UserProfile, access_token: str = Depends(get_acces
     db.commit()
     
     return {"message": "Profile updated successfully"}
-
 
 def get_email_from_cookie(access_token,db):
     try:

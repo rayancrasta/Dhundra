@@ -1,13 +1,33 @@
 import React from 'react';
-import { TextField, Button, Paper, Typography, Box, CircularProgress } from "@mui/material";
+import { TextField, Button, Paper, Select, MenuItem, Typography, Box, FormControl,InputLabel, CircularProgress } from "@mui/material";
 
-const ResumeUpload = ({ resumeFile, onResumeUpload, jobDescription, onJobDescriptionChange, loading, isUpdated , handleUpdateResume, uploadError}) => {
+const ResumeUpload = ({ resumeFile, onResumeUpload, jobDescription, onJobDescriptionChange, loading, isUpdated , handleUpdateResume, uploadError,selectedModel,setSelectedModel}) => {
     
+    const handleModelSelect = (event) => {
+        const model = event.target.value;
+        setSelectedModel(model);
+    };
 
     return (
     <Paper elevation={3} sx={{ padding: 3 }}>
         <Typography variant="h6">Resume Upload & Job Description</Typography>
         <input type="file" onChange={onResumeUpload} />
+
+        <FormControl fullWidth sx={{ marginY: 2 }}>
+            <InputLabel id="model-select-label">Model</InputLabel>
+            <Select
+                labelId="model-select-label"
+                value={selectedModel}
+                onChange={handleModelSelect}
+                label="Model"  // This binds the label to the Select
+            >
+                <MenuItem value="gpt-4o-mini">gpt-4o-mini</MenuItem>
+                <MenuItem value="gpt-4o">gpt-4o</MenuItem>
+                <MenuItem value="gpt-4">gpt-4</MenuItem>
+                <MenuItem value="gpt-3.5-turbo">gpt-3.5-turbo</MenuItem>
+            </Select>
+        </FormControl>
+
         <TextField
         fullWidth
         multiline
@@ -17,7 +37,7 @@ const ResumeUpload = ({ resumeFile, onResumeUpload, jobDescription, onJobDescrip
         onChange={onJobDescriptionChange}
         sx={{ marginY: 2 }}
         />
-        <Button variant="contained" onClick={handleUpdateResume} fullWidth>
+        <Button variant="contained" onClick={handleUpdateResume} sx={{ textTransform: 'none', borderRadius: '5px' }}>
         Update Resume
         </Button>
         {loading && (
@@ -25,11 +45,15 @@ const ResumeUpload = ({ resumeFile, onResumeUpload, jobDescription, onJobDescrip
             <CircularProgress />
         </Box>
         )}
+
         {isUpdated && !loading && (
-        <Typography variant="h6" sx={{ color: 'green', marginTop: 2 }}>
-            &#10003; Resume updated successfully
-        </Typography>
+        <Box sx={{ marginTop: 2, width: '100%' }}>  {/* Wrap message in Box */}
+            <Typography variant="body1" sx={{ color: 'green' }}>
+                &#10003; Resume updated successfully
+            </Typography>
+        </Box>
         )}
+
         <Typography variant="p" sx={{ color: 'red', paddingTop: 2 }}>
             {uploadError}
         </Typography>

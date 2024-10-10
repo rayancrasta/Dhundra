@@ -1,4 +1,5 @@
-from fastapi import APIRouter,UploadFile, Form, HTTPException, Depends
+from fastapi import APIRouter,UploadFile, Form, HTTPException, Depends, File
+from fastapi.responses import FileResponse
 from openai import OpenAI
 from sqlalchemy.orm import Session
 from database import get_db
@@ -6,33 +7,248 @@ from user import get_access_token,get_email_from_cookie
 import logging
 from fastapi.responses import JSONResponse
 import openai
+from schemas import GeneratePDFReq, RegenRequest, CoverLetterRequest
+from datetime import datetime
+import markdown2
+import pdfkit
+from styles import css_styles
+import random, os , string
+from models import PDFrecord
+from pypdf import PdfReader  
+from openaiops import update_markdown_from_prompt,update_markdown_with_openai,generate_cover_letterai
 
 router = APIRouter()
 
+models = ['gpt-4o','gpt-4o-mini','gpt-4','gpt-3.5-turbo']
 
-def update_markdown_with_openai(api_key, resume_markdown, job_description):
+
+@router.post("/update_resume")
+async def update_resume(file: UploadFile, 
+                        job_description: str = Form(...),
+                        model: str = Form(...),
+                        access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    
+    # file and job_description are set as form data in the frontend while calling the api endpoint
     try:
-        # Initialize the OpenAI client
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        # Read resume content
+        resume_content = await file.read()
+        if not resume_content:
+            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+        try:
+            resume_markdown = resume_content.decode('utf-8')
+        except UnicodeDecodeError:
+            raise HTTPException(status_code=400, detail="Uploaded file is not a valid file.")
+
+        if model not in models:
+            raise HTTPException(status_code=400, detail="Invalid Model")
+        # Validate job description
+        if not job_description:
+            raise HTTPException(status_code=400, detail="Job description cannot be empty.")
+
+        if not user.openaitoken:
+            raise HTTPException(status_code=400, detail="OpenAI token not set")
+        # Update resume using OpenAI
+        updated_markdown = update_markdown_with_openai(user.openaitoken, resume_markdown, job_description,model)
+
+        # Log success
+        logging.info(f"Resume successfully updated for user {user.email}")
+
+        # Return the updated markdown for frontend review
+        return {"message": "Resume updated", "updated_markdown": updated_markdown}
+
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}")
+        raise HTTPException(status_code=500, detail="Error generating resume")
+
+def convert_markdown_to_pdf(markdown_content, output_pdf):
+    html_content = markdown2.markdown(markdown_content)
+    # Define inline CSS styles
+    full_html_content = css_styles + html_content
+    options = {
+        'encoding': 'UTF-8',
+        'margin-top': '0.7in',
+        'margin-right': '0.7in',
+        'margin-bottom': '0.7in',
+        'margin-left': '0.7in',
+    }
+    pdfkit.from_string(full_html_content, output_pdf, options=options)
+
+def generate_random_number_string(length=10):
+    return ''.join(random.choices(string.digits, k=length))   
+                
+@router.post("/generate-pdf")
+async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        email = user.email
+        
+        # Generate a unique ID for the PDF name
+        pdf_name  = generate_random_number_string()
+        output_dir = 'output'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        pdf_output_path = f'{output_dir}/{pdf_name}.pdf'
+        
+        convert_markdown_to_pdf(pdfreq.markdown_content, pdf_output_path)
+    
+    except Exception as e:
+        print("Error generating pdf: ",e)
+    
+    try:
+        # Save the record in DB
+        pdfrecord = pdfreq.dict()
+        pdfrecord.pop('markdown_content')
+        pdfrecord['email'] = email
+        pdfrecord['timestamp'] = datetime.now()
+        pdfrecord['pdfname'] = pdf_name
+        
+        pdfdbrecord = PDFrecord(**pdfrecord)
+        db.add(pdfdbrecord)
+        db.commit()
+        db.refresh(pdfdbrecord)
+        
+        return {"pdf_name": pdf_name}
+    except Exception as e:
+        print("Error saving pdf record in DB: ",e)
+        raise HTTPException(status_code=500, detail="Error Generating PDF")
+    
+@router.get("/download-resume/{pdf_name}")
+async def download_resume(pdf_name: str,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        email = user.email
+        
+        pdfrecord = db.query(PDFrecord).filter(PDFrecord.pdfname == pdf_name,PDFrecord.email == email).first()
+        
+        if not pdfrecord:
+            raise HTTPException(status_code=404, detail="Resume not found")
+        
+        output_dir = 'output'
+        pdf_output_path = f'{output_dir}/{pdfrecord.pdfname}.pdf'
+        
+        if not os.path.exists(pdf_output_path):
+            raise HTTPException(status_code=404, detail="PDF file not found")
+        
+        file_size = os.path.getsize(pdf_output_path)
+        print(f"Serving PDF file: {pdf_output_path}, Size: {file_size} bytes")
+
+        return FileResponse(pdf_output_path, media_type='application/pdf', filename=f'Resume.pdf')
+    
+    except HTTPException as e:
+        print("Error downloading pdf HTTPexception: ",e)
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+    except Exception as e:
+        print("Error downloading pdf: ",e)
+        raise HTTPException(status_code=500, detail="Error Downloading PDF")
+
+
+@router.post("/regen-resume")
+async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        
+        if regenRequest.aimodel not in models:
+            raise HTTPException(status_code=400, detail="Invalid Model")
+        
+        if not user.openaitoken:
+            raise HTTPException(status_code=400, detail="OpenAI token not set")
+        
+        updated_markdown = update_markdown_from_prompt(user.openaitoken, regenRequest.updated_markdown, regenRequest.jobDescription, regenRequest.user_prompt,regenRequest.aimodel)
+
+        # Log success
+        logging.info(f"Resume successfully updated for user {user.email}")
+
+        # Return the updated markdown for frontend review
+        return {"message": "Resume updated", "updated_markdown": updated_markdown}
+    
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}")
+        raise HTTPException(status_code=500, detail="Error generating resume from prompt")
+
+@router.post("/generate_cover_letter")
+def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        if cvreq.aimodel not in models:
+            raise HTTPException(status_code=400, detail="Invalid Model")
+        
+        if not user.openaitoken:
+            raise HTTPException(status_code=400, detail="OpenAI token not set")
+        
+        cover_letter = generate_cover_letterai(user.openaitoken, cvreq.resume_markdown, cvreq.job_description,cvreq.aimodel)
+    
+        return {"cover_letter": cover_letter}  
+
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}")
+        raise HTTPException(status_code=500, detail="Error generating Cover Letter")
+
+def use_openai_for_markdown(api_key,text,ai_model):
+    try:
         openai_client = OpenAI(api_key=api_key)
-
-        # Define the system and user message for the API
+            
+        # Function to generate cover letter
         messages = [
-            {"role": "system", "content": "You are an expert resume writer. Update the following resume to better fit the given job description. Maintain the structure and content of the original resume as much as possible. Don't reduce the size of content much. Don't fake any experience or skills that the original resume doesn't have. If anything seems obvious, then only add it; don't add any new data that would make it look fake. As the resume is of a less experienced professional, change the title according to the job description. If it's a senior role, mention it as a normal role, not a senior title. Add soft skills based on the job description. Making it ATS friendly according to the job description is our goal. Just give me resume content; don't add any info text from your side."},
-            {"role": "user", "content": f"Resume:\n{resume_markdown}\n\nJob Description:\n{job_description}\n\nUpdated Resume:"}
+            {
+                "role": "system",
+                "content": "You are a professional markdown writer. Generate the text which is a resume into the most accurate markdown format.Ensure that headings, paragraphs, bullet points, numbered lists etc are properly formatted to make it look like a proffesional resume. Keep the section as headings and the titles within it using bold. Just return the markdown content not even ```markdown"
+            },
+            {
+                "role": "user",
+                "content": f"Text:\n{text}\n\nMarkdown:"
+            }
         ]
-
-        # Make the API call to OpenAI
+        
         response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model=ai_model,
             messages=messages,
-            max_tokens=1500,
+            max_tokens=3000,
             temperature=0.7
         )
-
-        # Extract and return the updated resume content
-        updated_markdown = response.choices[0].message.content.strip()
-        return updated_markdown
-
+        markdown_text = response.choices[0].message.content.strip()
+        return markdown_text
+    
     except openai.UnprocessableEntityError as e:
         # Handle invalid requests, like a malformed request or invalid input format
         print(f"Invalid request error: {str(e)}")
@@ -58,47 +274,49 @@ def update_markdown_with_openai(api_key, resume_markdown, job_description):
         print(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail="Unexpected Error occured")
 
-
-@router.post("/update_resume")
-async def update_resume(file: UploadFile, job_description: str = Form(...), access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
-    
-    # file and job_description are set as form data in the frontend while calling the api endpoint
+@router.post("/get_markdown")
+async def upload_pdf(file: UploadFile = File(...),
+                    model: str = Form(...),
+                    access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
 
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized user.")
-
-        # Read resume content
-        resume_content = await file.read()
-        if not resume_content:
-            raise HTTPException(status_code=400, detail="Uploaded file is empty.")
-
-        try:
-            resume_markdown = resume_content.decode('utf-8')
-        except UnicodeDecodeError:
-            raise HTTPException(status_code=400, detail="Uploaded file is not a valid file.")
-
-        # Validate job description
-        if not job_description:
-            raise HTTPException(status_code=400, detail="Job description cannot be empty.")
-
+        
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
-        # Update resume using OpenAI
-        updated_markdown = update_markdown_with_openai(user.openaitoken, resume_markdown, job_description)
+        
+        # Save the uploaded file temporarily
+        file_location = f"temp/{file.filename}"
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
 
-        # Log success
-        logging.info(f"Resume successfully updated for user {user.email}")
+        # Extract text from the PDF using pypdf
+        reader = PdfReader(file_location)
+        pdf_text = ""
+        for page in reader.pages:
+            pdf_text += page.extract_text()
 
-        # Return the updated markdown for frontend review
-        return {"message": "Resume updated", "updated_markdown": updated_markdown}
+        # Use OpenAI to convert the extracted text into structured markdown
+        markdown_text = use_openai_for_markdown(user.openaitoken,pdf_text,model)
 
+        # Save the markdown content to a file
+        markdown_file_location = f"temp/{file.filename.split('.')[0]}.md"
+        with open(markdown_file_location, "w") as md_file:
+            md_file.write(markdown_text)
+
+        # Remove the temporary PDF file
+        os.remove(file_location)
+
+        # Send the markdown file as a download response
+        return FileResponse(markdown_file_location, media_type="text/markdown", filename="converted_markdown.md")
+    
     except HTTPException as e:
         logging.error(f"HTTP Exception: {e.detail}")
         raise HTTPException(status_code=e.status_code, detail=e.detail)
 
     except Exception as e:
         logging.error(f"Unexpected Error: {e}")
-        raise HTTPException(status_code=500, detail=e.detail)
+        raise HTTPException(status_code=500, detail="Error generating markdown")

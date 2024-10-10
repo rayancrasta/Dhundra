@@ -11,8 +11,6 @@ from models import User,Shortcuts
 import bcrypt
 from utils import get_password_hash
 
-
-
 def create_user(db: Session, user: UserCreate):
     try:
         hashed_password = get_password_hash(user.password)

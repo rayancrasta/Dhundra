@@ -2,7 +2,7 @@ import React from 'react';
 import { TextField, Button, Typography, Box, Tooltip, IconButton,Paper } from "@mui/material";
 import { ContentCopy } from "@mui/icons-material";
 
-const PersonalDetails = ({ personalDetails, onDetailChange, onSave, isEditing, onEdit,copyToClipboard }) => (
+const PersonalDetails = ({ personalDetails, onDetailChange, onSave, isEditing, onEdit,copyToClipboard,personalDetaileError }) => (
   <Paper elevation={3} sx={{ padding: 3, marginTop: 3 }}>
     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
       Personal Details
@@ -46,6 +46,11 @@ const PersonalDetails = ({ personalDetails, onDetailChange, onSave, isEditing, o
         <Button variant="contained" onClick={onEdit} fullWidth sx={{ marginTop: 2 }}>
           Edit
         </Button>
+        { personalDetaileError && (
+          <Typography variant="body1" sx={{ color: 'red', marginBottom: 2 }}>
+            {personalDetaileError}
+          </Typography>
+        )}
       </Box>
     )}
   </Paper>

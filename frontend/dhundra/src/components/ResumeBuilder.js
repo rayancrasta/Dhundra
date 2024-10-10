@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom';
 import axios from "axios";
 import AuthNavbar from './AuthNavbar';
 import UpdateDetailsForm from './UpdateDetailsForm';
@@ -8,6 +7,9 @@ import ResumeUpload from './ResumeUpload';
 import ResumePreview from './ResumePreview';
 import SnackbarAlert from './SnackbarAlert';
 import { Container, Grid } from "@mui/material";
+import CoverLetter from './CoverLetter';
+import { UploadFile } from '@mui/icons-material';
+import UploadPDF from './UploadPDF';
 
 
 const ResumeBuilder = () => {
@@ -15,7 +17,8 @@ const ResumeBuilder = () => {
     // State to manage
     const [resumeFile,setResumeFile] = useState(null);
     const [jobDescription,setJobDescription] = useState("");
-    
+    const [selectedModel,setSelectedModel] = useState("gpt-4o-mini");
+
     //Form to fill save the job resume
     const [companyName,setCompanyName] = useState("");
     const [jobUrl,setjobURl] = useState("");
@@ -24,7 +27,6 @@ const ResumeBuilder = () => {
     //Loading animations
     const [isUpdated,setIsUpdated] = useState(false); //while openai call
     const [pdfLoading,setpdfLoading] = useState(false);  // while pdf generation
-    const [isGeneratingCoverLetter,setIsGeneratingCoverLetter] = useState(false);
     const [isEditing,setIsEditing] = useState(false);
     const [loading,setLoading] = useState(false); // When resume is updating
 
@@ -35,8 +37,9 @@ const ResumeBuilder = () => {
     //Results
     const [updatedMarkdown,setUpdatedMarkdown] = useState("");
     const [pdfPath,setPdfPath] = useState(""); // pdf generated path
-    const [timestamp,setTimestamp] = useState(""); //timestamp for the pdf
-    const [coverLetter,setCoverLetter] = useState(""); //generated cover letter
+
+    const [pdfError, setpdfError] = useState(false);
+
     const [dropdownValue,setDropdownValue] = useState("");
 
     // Shortcut copy menu
@@ -48,7 +51,7 @@ const ResumeBuilder = () => {
         website: "",
         medium: "",
     });
-
+    const [personalDetaileError,setPersonalDetailsError] = useState("");
     // const navigate = useNavigate();
 
     useEffect(() => {
@@ -56,8 +59,8 @@ const ResumeBuilder = () => {
             try {
                 const response = await axios.get("http://localhost:8000/user/personal-details",{ withCredentials: true });
                 setPersonalDetails(response.data);
-            } catch (error) {
-                console.error("Error fetching personal details",error);
+            } catch (err) {
+                setPersonalDetailsError(err.response ? err.response.data.detail : 'Error fetching Shortcuts')
             }
         }
         fetchPersonalDetails();
@@ -69,7 +72,9 @@ const ResumeBuilder = () => {
 
 
     //Form change
-    const handleJobDescriptionChange = (e) => setJobDescription(e.target.value);
+    const handleJobDescriptionChange = (e) => {
+        setJobDescription(e.target.value);
+    }
     const handleCompanyNameChange = (e) => setCompanyName(e.target.value);
     const handleJobUrlChange = (e) => setjobURl(e.target.value);
     const handleRoleChange = (e) => setRole(e.target.value);
@@ -89,19 +94,25 @@ const ResumeBuilder = () => {
         const formData = new FormData();
         formData.append("file",resumeFile);
         formData.append("job_description",jobDescription);
-        
+        formData.append("model",selectedModel)
         try {
-            const response = await axios.post("http://localhost:8000/resume/update_resume", formData, {withCredentials: true},
-                { headers: { "Content-Type": "multipart/form-data"},
-        });
-
-        setUpdatedMarkdown(response.data.updated_markdown); //Set the updated markdown
-        setIsUpdated(true); // show success tick mark
-        setShowForm(true); // Display the job details save form
         
+            const response = await axios.post(
+                "http://localhost:8000/resume/update_resume",
+                formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    withCredentials: true,
+                }
+            );
+
+            setUpdatedMarkdown(response.data.updated_markdown); //Set the updated markdown
+            setIsUpdated(true); // show success tick mark
+            setShowForm(true); // Display the job details save form
+            // console.log("showForm:", showForm);
 
     } catch(error) {
-        console.error("Error updating Resume",error);
+        // console.error("Error updating Resume",error);
         if (error.response && error.response.data) {
             setUploadError(error.response.data.detail); // Set the upload error with detail from response
         } else {
@@ -119,22 +130,26 @@ const ResumeBuilder = () => {
     const handleGeneratePdf = async () => {
         setpdfLoading(true); // loading circle
         setPdfGenerationMessage(""); //Reset the message
-
+        setpdfError(false);
         try {
-            const response = await axios.post("http://localhost:8000/generate_pdf",{
+            const response = await axios.post("http://localhost:8000/resume/generate-pdf",{
                 markdown_content: updatedMarkdown,
                 company_name: companyName,
                 job_url: jobUrl,
                 role: role,
-                type: dropdownValue,
+                posting_type: dropdownValue,
                 jobDescription: jobDescription
-            });
+            },{ withCredentials: true });
 
-            setPdfPath(response.data.pdf_path);
-            setTimestamp(response.data.pdf_path.split("/").pop().replace("resume_","").split(".")[0]);
+            setPdfPath(response.data.pdf_name);
             setPdfGenerationMessage("PDF is ready to be downloaded");
         } catch (error) {
-            console.error("Error generating PDF",error);
+            setpdfError(true);
+            if (error.response && error.response.detail) {
+                setPdfGenerationMessage(error.response.detail);
+            } else {
+                setPdfGenerationMessage("Error Generating PDF"); // Fallback error message
+            }
         } finally {
             setpdfLoading(false); // Stop loading for PDF generation
         }
@@ -143,20 +158,27 @@ const ResumeBuilder = () => {
     // Download Resume button
     const handleDownloadResume = async () => {
         try {
-            const response = await axios.post(`http://localhost:8000/download_resume/${timestamp}`,{
+            setpdfError(false);
+            const response = await axios.get(`http://localhost:8000/resume/download-resume/${pdfPath}`,{withCredentials: true,
                 responseType: "blob",
             });
 
             const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf"}));
             const link = document.createElement("a");
             link.href = url;
-            link.setAttribute("download",`Rayan Crasta resume ${timestamp}.pdf`);
+            link.setAttribute("download",`Resume.pdf`);
 
             document.body.appendChild(link);
             link.click();
             link.remove();
         } catch (error) {
-            console.error("Error downloading PDF",error);
+            setpdfError(true)
+            if (error.response && error.response.status === 404) {
+                setPdfGenerationMessage("File not found");
+            } else {
+                setPdfGenerationMessage("Error downloading PDF"); // Fallback error message
+            }
+            // console.error("Error downloading PDF",error);
         }
     };
 
@@ -179,36 +201,9 @@ const ResumeBuilder = () => {
         setSnackbarOpen(true);
     }
 
-    const handleSnackbarClose = () => {
-        setSnackbarOpen(false);
-    }
-
     const copyToClipboard = (text) => {
         handleCopyToClipboard(text);
     }
-
-    // Generate cover letter
-    const handleGenerateCoverLetter = async () => {
-        if(!updatedMarkdown || !jobDescription) {
-            alert("Please provide an updated resume and job description");
-            return;
-        }
-
-        setCoverLetter("");
-        setIsGeneratingCoverLetter(true);  // Loading animation
-
-        try {
-            const response = await axios.post("http://localhost:8000/generate_cover_letter",{
-                resume_markdown: updatedMarkdown,
-                job_description: jobDescription,
-            });
-            setCoverLetter(response.data.cover_letter); // Set the generated cover letter
-        } catch (error) {
-            console.error("Error generating cover letter: ",error);
-        } finally {
-            setIsGeneratingCoverLetter(false); // loading animation ends
-        }
-    };
 
     return (
         <div>
@@ -225,7 +220,12 @@ const ResumeBuilder = () => {
                         isUpdated={isUpdated}
                         handleUpdateResume={handleUpdateResume}
                         uploadError={uploadError}
+                        selectedModel={selectedModel}
+                        setSelectedModel={setSelectedModel}
                     />
+
+                    <UploadPDF 
+                        aimodel={selectedModel}/>
 
                     <PersonalDetails
                         personalDetails={personalDetails}
@@ -234,13 +234,19 @@ const ResumeBuilder = () => {
                         isEditing={isEditing}
                         onEdit={() => setIsEditing(!isEditing)}
                         copyToClipboard={copyToClipboard}
+                        personalDetaileError={personalDetaileError}
                     />
+
                     </Grid>
 
                     <Grid item xs={12} md={6}>
-                        <ResumePreview updatedMarkdown={updatedMarkdown} onUpdatedMarkdownChange={setUpdatedMarkdown} />
+                        <ResumePreview updatedMarkdown={updatedMarkdown} 
+                        onUpdatedMarkdownChange={setUpdatedMarkdown} 
+                        jobDescription={jobDescription} showForm={showForm} 
+                        aimodel={selectedModel}/>
 
                         {showForm && (
+                            <div>
                             <UpdateDetailsForm
                                 companyName={companyName}
                                 onCompanyNameChange={handleCompanyNameChange}
@@ -252,7 +258,18 @@ const ResumeBuilder = () => {
                                 onDropdownChange={(e) => setDropdownValue(e.target.value)}
                                 onGeneratePdf={handleGeneratePdf}
                                 pdfLoading={pdfLoading}
+                                pdfGenerationMessage={pdfGenerationMessage}
+                                onDownloadResume={handleDownloadResume}
+                                pdfError={pdfError}
                                 />
+                            
+                            <CoverLetter
+                                jobDescription={jobDescription}
+                                updatedMarkdown={updatedMarkdown}
+                                aimodel={selectedModel}
+                                copyToClipboard={copyToClipboard}
+                            />
+                                </div>
                                 )}
                     </Grid>
                 </Grid>

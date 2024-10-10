@@ -1,7 +1,7 @@
 ## Rayan Crasta - Software Engineer
 
 **Email**: [rayancrasta95@gmail.com](mailto:rayancrasta95@gmail.com) | **Contact**: +44 7767591427  
-**Location**: Leeds, UK | [LinkedIn](https://linkedin.com/in/rayan-crasta/) | [http://rayancrasta.com](http://rayancrasta.com) | [GitHub](https://github.com/rayancrasta)
+**Location**: Leeds, UK | [LinkedIn](https://linkedin.com/in/rayan-crasta/) | [http://rayancrasta.com](https://rayancrasta.com) | [GitHub](https://github.com/rayancrasta)
 
 #### Summary
 Dynamic software engineer adept in system design, software development, and database management. Eager to apply technical prowess to build high-performance applications with modern technologies, delivering top-quality solutions and driving innovation in collaborative team environments. Seeking challenging roles to grow professionally and make a meaningful impact in the tech industry.
