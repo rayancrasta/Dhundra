@@ -1,8 +1,82 @@
-import React from 'react'
+import React ,{ useState }from 'react';
+import axios from 'axios';
 import { TextField, Button, Paper, Typography, Box, MenuItem, CircularProgress } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
 
-const UpdateDetailsForm = ({ companyName, onCompanyNameChange, jobUrl, onJobUrlChange, role, onRoleChange, dropdownValue, onDropdownChange, onGeneratePdf, pdfLoading, pdfGenerationMessage, onDownloadResume ,pdfError }) => {
+const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
+    const [companyName,setCompanyName] = useState("");
+    const [jobUrl,setjobURl] = useState("");
+    const [role,setRole] = useState("");
+    const [dropdownValue,setDropdownValue] = useState("");
+    const [pdfLoading,setpdfLoading] = useState(false);  
+    const [pdfGenerationMessage,setPdfGenerationMessage] = useState("");
+    const [pdfError, setpdfError] = useState(false);
+    const [pdfPath,setPdfPath] = useState(""); // pdf generated path
+
+    const handleCompanyNameChange = (e) => setCompanyName(e.target.value);
+    const handleJobUrlChange = (e) => setjobURl(e.target.value);
+    const handleRoleChange = (e) => setRole(e.target.value);
+    const onDropdownChange = (e) => setDropdownValue(e.target.value);
+
+    
+    const onGeneratePdf = async () => {
+        setpdfLoading(true); // loading circle
+        setPdfGenerationMessage(""); //Reset the message
+        setpdfError(false);
+        try {
+            const response = await axios.post("http://localhost:8000/resume/generate-pdf",{
+                markdown_content: updatedMarkdown,
+                company_name: companyName,
+                job_url: jobUrl,
+                role: role,
+                posting_type: dropdownValue,
+                jobDescription: jobDescription
+            },{ withCredentials: true });
+
+            setPdfPath(response.data.pdf_name);
+            setPdfGenerationMessage("PDF is ready to be downloaded");
+        } catch (error) {
+            setpdfError(true);
+            if (error.response && error.response.detail) {
+                setPdfGenerationMessage(error.response.detail);
+            } else {
+                setPdfGenerationMessage("Error Generating PDF"); // Fallback error message
+            }
+        } finally {
+            setpdfLoading(false); // Stop loading for PDF generation
+        }
+    };
+
+    // Download Resume button
+    const onDownloadResume = async () => {
+        try {
+            setpdfError(false);
+            const response = await axios.get(`http://localhost:8000/resume/download-resume/${pdfPath}`,{withCredentials: true,
+                responseType: "blob",
+            });
+
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf"}));
+            const link = document.createElement("a");
+            link.href = url;
+            link.setAttribute("download",`Resume.pdf`);
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (error) {
+            setpdfError(true)
+            if (error.response && error.response.status === 404) {
+                setPdfGenerationMessage("File not found");
+            } else {
+                setPdfGenerationMessage("Error downloading PDF"); // Fallback error message
+            }
+            // console.error("Error downloading PDF",error);
+        }
+    };
+    
+
+
+    
     return (
     <Paper elevation={3} sx={{ padding: 3, flex: '1 1 auto', marginBottom: 3 }}>
         <Typography variant="h6">Save Details</Typography>
@@ -10,7 +84,7 @@ const UpdateDetailsForm = ({ companyName, onCompanyNameChange, jobUrl, onJobUrlC
         fullWidth
         label="Company Name"
         value={companyName}
-        onChange={onCompanyNameChange}
+        onChange={handleCompanyNameChange}
         sx={{ marginY: 1 }}
         />
 
@@ -18,7 +92,7 @@ const UpdateDetailsForm = ({ companyName, onCompanyNameChange, jobUrl, onJobUrlC
         fullWidth
         label="Job URL"
         value={jobUrl}
-        onChange={onJobUrlChange}
+        onChange={handleJobUrlChange}
         sx={{ marginY: 1 }}
         />
 
@@ -26,7 +100,7 @@ const UpdateDetailsForm = ({ companyName, onCompanyNameChange, jobUrl, onJobUrlC
         fullWidth
         label="Role"
         value={role}
-        onChange={onRoleChange}
+        onChange={handleRoleChange}
         sx={{ marginY: 1 }}
         />
 

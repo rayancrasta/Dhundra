@@ -1,11 +1,68 @@
-import React from 'react';
+import React, { useState } from "react";
 import { TextField, Button, Paper, Select, MenuItem, Typography, Box, FormControl,InputLabel, CircularProgress } from "@mui/material";
+import axios from 'axios';
 
-const ResumeUpload = ({ resumeFile, onResumeUpload, jobDescription, onJobDescriptionChange, loading, isUpdated , handleUpdateResume, uploadError,selectedModel,setSelectedModel}) => {
+const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelectedModel,setShowForm,setUpdatedMarkdown}) => {
     
+    const [resumeFile,setResumeFile] = useState(null);
+
+    const [uploadError,setUploadError] = useState("");
+    const [loading,setLoading] = useState(false); // When resume is updating
+    const [isUpdated,setIsUpdated] = useState(false); //while openai call
+    
+    const onResumeUpload = (e) => setResumeFile(e.target.files[0]);
+
+    const onJobDescriptionChange = (e) => {
+        setJobDescription(e.target.value);
+    }
+
     const handleModelSelect = (event) => {
         const model = event.target.value;
         setSelectedModel(model);
+    };
+
+    const handleUpdateResume = async () => {
+        if (!resumeFile || !jobDescription) {
+            alert("Please upload a resume and enter a job description");
+            return;
+        }
+
+        setUploadError("");
+        setLoading(true); // opeai call made
+        setIsUpdated(false); // Reset completion tickmark
+
+        //Upload the resume
+        const formData = new FormData();
+        formData.append("file",resumeFile);
+        formData.append("job_description",jobDescription);
+        formData.append("model",selectedModel)
+        try {
+        
+            const response = await axios.post(
+                "http://localhost:8000/resume/update_resume",
+                formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                    withCredentials: true,
+                }
+            );
+
+            setUpdatedMarkdown(response.data.updated_markdown); //Set the updated markdown
+            setIsUpdated(true); // show success tick mark
+            setShowForm(true); // Display the job details save form
+            // console.log("showForm:", showForm);
+
+    } catch(error) {
+        // console.error("Error updating Resume",error);
+        if (error.response && error.response.data) {
+            setUploadError(error.response.data.detail); // Set the upload error with detail from response
+        } else {
+            setUploadError("An unknown error occurred."); // Fallback error message
+        }
+
+    } finally {
+        setLoading(false);
+    }
     };
 
     return (
