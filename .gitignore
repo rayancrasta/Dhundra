@@ -1,3 +1,5 @@
 backend/app/config.py
 backend/venv
 frontend/dhundra/node_modules
+migrate/newoutput
+migrate/output
