@@ -10,6 +10,7 @@ import Dashboard from './components/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import ResumeBuilder from './components/ResumeBuilder';
 import Profile from './components/Profile';
+import Tracker from './components/Tracker';
 
 const App = () => (
   <ThemeProvider theme={theme} >
@@ -24,6 +25,8 @@ const App = () => (
       <Route path="/dashboard" element={<ProtectedRoute element={Dashboard} />} />
       <Route path="/resume-builder" element={<ProtectedRoute element={ResumeBuilder} />} />
       <Route path="/profile" element={<ProtectedRoute element={Profile} />} />
+      <Route path="/router" element={<ProtectedRoute element={Profile} />} />
+      <Route path="/tracker" element={<ProtectedRoute element={Tracker}/> } />
 
     </Routes>
   </Router>

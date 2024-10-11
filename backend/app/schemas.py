@@ -1,6 +1,7 @@
 # schemas.py
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional,List
+from datetime import datetime
 
 class UserCreate(BaseModel):
     firstName: str
@@ -43,3 +44,30 @@ class CoverLetterRequest(BaseModel):
     resume_markdown: str
     job_description: str
     aimodel : str
+
+class PDFRecordResponse(BaseModel):
+    id: int
+    pdfname: str
+    timestamp: datetime
+    company_name: str
+    job_url: str
+    role: str
+    posting_type: str
+    jobDescription: str
+
+    class Config:
+        orm_mode = True
+        from_attributes = True  # Allow from_orm usage
+    
+class PDFHistoryResponse(BaseModel):
+    history: List[PDFRecordResponse]  # This will hold the list of records
+    total: int  # This will hold the total count of records
+
+    class Config:
+        orm_mode = True
+    
+class PDFrecordUpdate(BaseModel):
+    company_name: str = None
+    job_url: str = None
+    role: str = None
+    jobDescription: str = None

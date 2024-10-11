@@ -1,25 +1,38 @@
 import React, { useState } from 'react'
 import { AppBar, Toolbar, Typography, IconButton ,  Drawer, List, ListItem, ListItemText  } from "@mui/material"
-import { Link } from "react-router-dom";
+import { Link , useNavigate } from "react-router-dom";
 import { Menu as MenuIcon } from '@mui/icons-material';
 import NavButton from './NavButton';
+import axios from 'axios';
 
 const AuthNavbar = () => {
     const [drawerOpen,setDrawerOpen] = useState(false);
+    const navigate = useNavigate();
 
     const handleDrawerToggle = () => {
         setDrawerOpen(!drawerOpen)
     }
+    
+    const handleLogout = async () => {
+        try {
+            await axios.post('http://localhost:8000/user/logout', {}, { withCredentials: true });
+            navigate('/login');
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
     
     //Button mapping
     const buttons = [
         { text: 'Dashboard', link: '/dashboard' },
         { text: 'Resume', link : '/resume-builder'}, 
         { text: 'Tracker', link : '/tracker'},
-        { text: 'People', link : '/people'},  
+        // { text: 'People', link : '/people'},  
         { text: 'Profile', link : '/profile'},
-        { text: 'Logout', link: '/logout' , sxProps: { '&:hover': { backgroundColor: '#311B92' }}}
+        { text: 'Logout', onClick: handleLogout , sxProps: { '&:hover': { backgroundColor: '#311B92' }}}
     ];
+
+    
 
     return (
         <>
@@ -39,6 +52,7 @@ const AuthNavbar = () => {
                         key={index}
                         text={button.text}
                         link={button.link}
+                        onClick={button.onClick}
                         sxProps={{ display: { xs: 'none', sm: 'inline' }, ...button.sxProps }} 
                         />
                     ))}
@@ -46,18 +60,18 @@ const AuthNavbar = () => {
         </AppBar>    
 
         <Drawer 
-    anchor='right' 
-    open={drawerOpen} 
-    onClose={handleDrawerToggle}
-    sx={{ 
-        '& .MuiDrawer-paper': {
-            backgroundColor: 'rgba(255, 255, 255, 0.8)', // Light translucent background
-            color: 'primary', // Darker text color for contrast
-            borderRadius: '10px', // Rounded corners
-            boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.3)', // Subtle shadow
-        }
-    }}
->
+                anchor='right' 
+                open={drawerOpen} 
+                onClose={handleDrawerToggle}
+                sx={{ 
+                    '& .MuiDrawer-paper': {
+                        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Light translucent background
+                        color: 'primary', // Darker text color for contrast
+                        borderRadius: '10px', // Rounded corners
+                        boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.3)', // Subtle shadow
+                    }
+                }}
+            >
 
             <List>
                 {buttons.map((button,index) => (

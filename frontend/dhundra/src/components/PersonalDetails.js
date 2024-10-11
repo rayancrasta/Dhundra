@@ -64,7 +64,7 @@ const PersonalDetailsComp = ({ copyToClipboard }) => {
             sx={{ marginY: 1 }}
           />
         ))}
-        <Button variant="contained" onClick={handleSavePersonalDetails} fullWidth sx={{ marginTop: 2 }}>
+        <Button variant="contained" onClick={handleSavePersonalDetails}  sx={{ marginTop: 2 }}>
           Save
         </Button>
       </>
@@ -87,9 +87,10 @@ const PersonalDetailsComp = ({ copyToClipboard }) => {
           </Tooltip>
         </Typography>
         ))}
-        <Button variant="contained" onClick={onEdit} fullWidth sx={{ marginTop: 2 }}>
+        <Button variant="contained" onClick={onEdit} sx={{ marginTop: 2 }}>
           Edit
         </Button>
+
         { personalDetaileError && (
           <Typography variant="body1" sx={{ color: 'red', marginBottom: 2 }}>
             {personalDetaileError}

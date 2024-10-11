@@ -1,4 +1,4 @@
-from fastapi import APIRouter,UploadFile, Form, HTTPException, Depends, File
+from fastapi import APIRouter,UploadFile, Form, HTTPException, Depends, File, Query, status
 from fastapi.responses import FileResponse
 from openai import OpenAI
 from sqlalchemy.orm import Session
@@ -16,11 +16,17 @@ import random, os , string
 from models import PDFrecord
 from pypdf import PdfReader  
 from openaiops import update_markdown_from_prompt,update_markdown_with_openai,generate_cover_letterai
+from typing import List
+from sqlalchemy import or_, and_
+from sqlalchemy.exc import SQLAlchemyError
+from pydantic import BaseModel, ValidationError
+from schemas import PDFRecordResponse, PDFHistoryResponse ,PDFrecordUpdate
+from datetime import datetime
+
 
 router = APIRouter()
 
 models = ['gpt-4o','gpt-4o-mini','gpt-4','gpt-3.5-turbo']
-
 
 @router.post("/update_resume")
 async def update_resume(file: UploadFile, 
@@ -163,7 +169,6 @@ async def download_resume(pdf_name: str,access_token: str = Depends(get_access_t
     except Exception as e:
         print("Error downloading pdf: ",e)
         raise HTTPException(status_code=500, detail="Error Downloading PDF")
-
 
 @router.post("/regen-resume")
 async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
@@ -320,3 +325,148 @@ async def upload_pdf(file: UploadFile = File(...),
     except Exception as e:
         logging.error(f"Unexpected Error: {e}")
         raise HTTPException(status_code=500, detail="Error generating markdown")
+    
+@router.get("/history", response_model=PDFHistoryResponse)
+def get_history(
+    page: int = Query(0), 
+    size: int = Query(20), 
+    query: str = Query(None),  # Search query
+    fromDate: str = Query(None),  # Start date filter
+    toDate: str = Query(None),  # End date filter
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db)
+):
+    try:
+        user = get_email_from_cookie(access_token, db)
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+        
+        # Calculate the offset for pagination
+        offset = page * size
+
+        # Start building the base query with filters
+        filters = []
+
+        # user
+        filters.append(PDFrecord.email == user.email)
+        
+        # Apply search query filter (if provided)
+        if query:
+            search = f"%{query}%"
+            filters.append(
+                or_(
+                    PDFrecord.company_name.ilike(search),
+                    PDFrecord.job_url.ilike(search),
+                    PDFrecord.role.ilike(search)
+                )
+            )
+
+        # Apply date range filters (if provided)
+        if fromDate:
+            try:
+                from_date_obj = datetime.strptime(fromDate, '%Y-%m-%d')
+                filters.append(PDFrecord.timestamp >= from_date_obj)
+            except ValueError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid fromDate format")
+
+        if toDate:
+            try:
+                to_date_obj = datetime.strptime(toDate, '%Y-%m-%d')
+                filters.append(PDFrecord.timestamp <= to_date_obj)
+            except ValueError:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid toDate format")
+
+        # Combine all filters using the 'and_' operator
+        history_query = db.query(PDFrecord).filter(and_(*filters))
+
+        # Get total records count after applying filters
+        total_records = history_query.count()
+
+        # Fetch the filtered records with pagination
+        history_records = history_query.order_by(PDFrecord.timestamp.desc()).offset(offset).limit(size).all()
+
+        # Convert the database records to response models
+        response = [PDFRecordResponse.from_orm(record) for record in history_records]
+
+        # Return the structured response
+        return PDFHistoryResponse(history=response, total=total_records)
+
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+    except Exception as e:
+        logging.error("Error getting history: %s", e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error getting history")
+
+# Endpoint to update a specific PDFrecord
+@router.put("/history/{record_id}")
+async def update_pdf_record(record_id: int, updated_record: PDFrecordUpdate, access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+    try:
+        user = get_email_from_cookie(access_token, db)
+        
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+        # Fetch the record by its ID
+        pdf_record = db.query(PDFrecord).filter(PDFrecord.id == record_id,PDFrecord.email == user.email ).first()
+
+        # If the record is not found, raise an error
+        if not pdf_record:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
+
+        # Update the fields that are provided in the request
+        if updated_record.company_name is not None:
+            pdf_record.company_name = updated_record.company_name
+        if updated_record.job_url is not None:
+            pdf_record.job_url = updated_record.job_url
+        if updated_record.role is not None:
+            pdf_record.role = updated_record.role
+        if updated_record.jobDescription is not None:
+            pdf_record.jobDescription = updated_record.jobDescription
+
+        # Commit the changes to the database
+        db.commit()
+        db.refresh(pdf_record)
+
+        return {"message": "Record updated successfully"}
+
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+    
+    except Exception as e:
+        logging.error("Error saving record while update: ",e)
+        raise HTTPException(status_code=500, detail=f"Error saving the record")
+    
+@router.delete("/delete_resume/{pdf_name}")
+async def delete_resume(pdf_name: str, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        # Check if the PDF exists in the database
+        pdf_record = db.query(PDFrecord).filter(PDFrecord.pdfname == pdf_name, PDFrecord.email == user.email).first()
+
+        if not pdf_record:
+            raise HTTPException(status_code=404, detail="PDF record not found.")
+
+        # Delete the PDF file from the file system
+        pdf_output_path = f'output/{pdf_name}.pdf'
+        if os.path.exists(pdf_output_path):
+            os.remove(pdf_output_path)
+        else:
+            raise HTTPException(status_code=404, detail="PDF file not found.")
+
+        # Remove the record from the database
+        db.delete(pdf_record)
+        db.commit()
+
+        return {"detail": "PDF and record deleted successfully."}
+
+    except Exception as e:
+        print(f"Error deleting PDF: {e}")
+        raise HTTPException(status_code=500, detail="Error deleting PDF and record.")
+    

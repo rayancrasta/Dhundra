@@ -54,7 +54,7 @@ const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelect
 
     } catch(error) {
         // console.error("Error updating Resume",error);
-        if (error.response && error.response.data) {
+        if (error.response && error.response.data && error.response.data.detail) {
             setUploadError(error.response.data.detail); // Set the upload error with detail from response
         } else {
             setUploadError("An unknown error occurred."); // Fallback error message

@@ -9,6 +9,7 @@ from config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS, SECRE
 from jose import jwt, JWTError
 from models import User,Shortcuts
 import openai
+from openai import OpenAI
 
 router = APIRouter()
 
@@ -76,6 +77,14 @@ def user_login(user: UserLogin, response: Response, db: Session = Depends(get_db
     )
 
     return {"message": "Login successful"}
+
+@router.post("/logout")
+def user_logout(response: Response):
+    # Clear the cookies by setting their max age to 0
+    response.delete_cookie(key="refresh_token")
+    response.delete_cookie(key="access_token")
+    
+    return {"message": "Logout successful"}
 
 @router.get("/verify")
 def verify_access_token(request: Request):
@@ -184,13 +193,11 @@ def get_email_from_cookie(access_token,db):
     
 @router.get("/openai-token-check")
 def is_api_key_valid(access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
-    try:
-        user = get_email_from_cookie(access_token,db)
-    except Exception as e:
-        print("Openai token check error: ",e)
-        raise HTTPException(status_code=500,detail="Token check failed")
-        
-    client = openai.OpenAI(api_key=user.openaitoken)
+    user = get_email_from_cookie(access_token,db)
+    if not user or  not user.openaitoken:
+        raise HTTPException(status_code=500,detail="Please set the token")
+    
+    client = OpenAI(api_key=user.openaitoken)
     try:
         client.models.list()
     except openai.AuthenticationError:
