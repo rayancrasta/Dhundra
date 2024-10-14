@@ -1,0 +1,49 @@
+.heatmap-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Adjust gap as needed */
+    justify-content: flex-start; /* Align heatmaps to the left */
+    max-width: 900px; /* Optional: Set a maximum width */
+}
+
+.heatmap-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: left;
+    width: 200px; /* Optional: Adjust width as needed */
+    height: 300px; /* Optional: Adjust height as needed */
+}
+
+.react-calendar-heatmap-month-labels {
+    display: none;
+  }
+
+/* Dashboard.css */
+
+.gradient-box {
+    background: linear-gradient(90deg, rgba(0, 183, 255, 1) 0%, rgba(0, 255, 128, 1) 100%); /* Blue to Green gradient */
+    -webkit-background-clip: text; /* Clip background to text */
+    -webkit-text-fill-color: transparent; /* Make text color transparent to show gradient */
+    padding: 5px; /* Adjust padding if necessary */
+    border-radius: 4px; /* Optional: add some border-radius for rounded corners */
+    font-weight: bold; /* Make the number bold */
+}
+
+.color-high {
+    fill: #1E88E5; /* Lighter blue for high count */
+}
+
+.color-medium {
+    fill: #42A5F5; /* Medium blue for medium count */
+}
+
+.color-low {
+    fill: #90CAF9; /* Light blue for low count */
+}
+
+.color-empty {
+    fill: #E0E0E0; /* Grey for no data */
+}
+
+  

@@ -3,14 +3,14 @@ import { createTheme } from '@mui/material/styles'
 const theme = createTheme({
     palette : {
         primary: {
-            main: '#283593',
+            main: '#0D47A1',
         },
         secondary: {
             main: '#f50057',
         },
         custom: {
             
-            buttonhover: '#1A237E' // Custom hover color
+            buttonhover: '#0D47A1' // Custom hover color
         }
     },
     typography : {
