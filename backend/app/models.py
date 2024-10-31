@@ -8,12 +8,17 @@ from datetime import datetime
 class User(Base):
     __tablename__ = "users"
     id = Column(Integer, index=True, autoincrement=True)
-    firstName = Column(String, index=True)  # Changed to snake_case
-    lastName = Column(String, index=True)    # Changed to snake_case
+    firstName = Column(String) 
+    lastName = Column(String)    
     email = Column(String, primary_key=True, index=True)
     password = Column(String)
-    openaitoken = Column(String, unique=True, nullable=True)  # Changed to snake_case
+    openaitoken = Column(String, unique=True, nullable=True)  
 
+    #user prompts
+    resumeprompt = Column(String,nullable=True)
+    coverletterprompt = Column(String,nullable=True)
+    
+    
     # Establish relationship with Shortcut
     shortcuts = relationship("Shortcuts", back_populates="user")  # Corrected back_populates reference
     pdf_records = relationship("PDFrecord", back_populates="user")  # Changed to snake_case
@@ -40,5 +45,8 @@ class PDFrecord(Base):
     role = Column(String, nullable=True)
     posting_type = Column(String, nullable=True)
     jobDescription = Column(String, nullable=True)  # Changed to snake_case
-
+    additionalData = Column(String,nullable=True)
+    
+    relevancy = Column(String,nullable=True) # new addition for resume relevancy to JD
+    
     user = relationship("User", back_populates="pdf_records")

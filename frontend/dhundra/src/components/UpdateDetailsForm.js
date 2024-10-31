@@ -1,7 +1,8 @@
 import React ,{ useState }from 'react';
 import axios from 'axios';
-import { TextField, Button, Paper, Typography, Box, MenuItem, CircularProgress } from "@mui/material";
+import { TextField, Button, Paper, Typography, Box, MenuItem, CircularProgress, Radio, RadioGroup, FormControlLabel } from "@mui/material";
 import DownloadIcon from '@mui/icons-material/Download';
+import { useUserContext } from './UserContext';
 
 const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
     const [companyName,setCompanyName] = useState("");
@@ -12,12 +13,15 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
     const [pdfGenerationMessage,setPdfGenerationMessage] = useState("");
     const [pdfError, setpdfError] = useState(false);
     const [pdfPath,setPdfPath] = useState(""); // pdf generated path
+    const [additionalData,setadditionalData] = useState("");
+    const { userFullName } = useUserContext();
+    const [style, setStyle] = useState("style1");
 
     const handleCompanyNameChange = (e) => setCompanyName(e.target.value);
     const handleJobUrlChange = (e) => setjobURl(e.target.value);
     const handleRoleChange = (e) => setRole(e.target.value);
     const onDropdownChange = (e) => setDropdownValue(e.target.value);
-
+    const handleadditionalDataChange = (e) => setadditionalData(e.target.value);
     
     const onGeneratePdf = async () => {
         setpdfLoading(true); // loading circle
@@ -30,7 +34,9 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
                 job_url: jobUrl,
                 role: role,
                 posting_type: dropdownValue,
-                jobDescription: jobDescription
+                jobDescription: jobDescription,
+                additionalData : additionalData,
+                style: style
             },{ withCredentials: true });
 
             setPdfPath(response.data.pdf_name);
@@ -58,7 +64,7 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
             const url = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf"}));
             const link = document.createElement("a");
             link.href = url;
-            link.setAttribute("download",`Resume.pdf`);
+            link.setAttribute("download",`${userFullName} Resume ${companyName}.pdf`);
 
             document.body.appendChild(link);
             link.click();
@@ -73,8 +79,8 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
             // console.error("Error downloading PDF",error);
         }
     };
-    
 
+    const onStyleChange = (e) => setStyle(e.target.value);
 
     
     return (
@@ -106,6 +112,14 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
 
         <TextField
         fullWidth
+        label="Additional Data"
+        value={additionalData}
+        onChange={handleadditionalDataChange}
+        sx={{ marginY: 1 }}
+        />
+
+        <TextField
+        fullWidth
         select
         label="Company or Recruitment"
         value={dropdownValue}
@@ -115,6 +129,19 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
             <MenuItem value="company">Company</MenuItem>
             <MenuItem MenuItem value="recruitment">Recruitment</MenuItem>
         </TextField>
+
+        {/* Radio buttons for style selection */}
+        <Box sx={{ marginY: 2 }}>
+                <Typography variant="body1">Select Style:</Typography>
+                <RadioGroup
+                    row
+                    value={style}
+                    onChange={onStyleChange}
+                >
+                    <FormControlLabel value="style1" control={<Radio />} label="Style 1 (Blue)" />
+                    <FormControlLabel value="style2" control={<Radio />} label="Style 2 (B/W)" />
+                </RadioGroup>
+        </Box>
 
         <Button variant="contained" onClick={onGeneratePdf} sx={{ textTransform: 'none', borderRadius: '5px' , marginTop: 2}}>
         Generate PDF

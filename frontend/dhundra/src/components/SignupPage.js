@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TextField, Button, Container, Typography, Box, Stack } from '@mui/material';
+import { TextField, Button, Container, Typography, Box, Stack, Link } from '@mui/material';
 import axios from 'axios';
 import Footer from './Footer';
 
@@ -165,6 +165,12 @@ const SignupPage = () => {
             </Button>
           </Stack>
         </Box>
+        <Typography sx={{ mt: 2 }}>
+                        Have an account ?{' '}
+                        <Link href="/login" color="primary">
+                           Login
+                        </Link>
+        </Typography>
 
     </Box>
   </Container>

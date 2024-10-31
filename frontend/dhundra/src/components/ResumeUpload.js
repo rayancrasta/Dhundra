@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { TextField, Button, Paper, Select, MenuItem, Typography, Box, FormControl,InputLabel, CircularProgress } from "@mui/material";
 import axios from 'axios';
 
-const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelectedModel,setShowForm,setUpdatedMarkdown}) => {
+const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelectedModel,setShowForm,setUpdatedMarkdown,
+    setRelevancyScore,setReasoning
+}) => {
     
     const [resumeFile,setResumeFile] = useState(null);
 
@@ -26,7 +28,8 @@ const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelect
             alert("Please upload a resume and enter a job description");
             return;
         }
-
+        setRelevancyScore('');
+        setReasoning('');
         setUploadError("");
         setLoading(true); // opeai call made
         setIsUpdated(false); // Reset completion tickmark
@@ -95,7 +98,7 @@ const ResumeUpload = ({ jobDescription,setJobDescription,selectedModel,setSelect
         sx={{ marginY: 2 }}
         />
         <Button variant="contained" onClick={handleUpdateResume} sx={{ textTransform: 'none', borderRadius: '5px' }}>
-        Update Resume
+        Update Resume ✨
         </Button>
         {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>

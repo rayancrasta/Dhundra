@@ -46,4 +46,8 @@
     fill: #E0E0E0; /* Grey for no data */
 }
 
+.color-default {
+    background-color: #d3d3d3; /* Light grey color for default */
+}
+
   

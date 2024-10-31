@@ -19,6 +19,8 @@ class UserProfile(BaseModel):
     lastName: str
     email: EmailStr
     openaitoken: Optional[str]
+    resumeprompt : Optional[str]
+    coverletterprompt : Optional[str]
     
 class ShortcutDetails(BaseModel):
     github: Optional[str]
@@ -33,6 +35,8 @@ class GeneratePDFReq(BaseModel):
     role: Optional[str]
     posting_type: Optional[str]
     jobDescription: Optional[str]
+    additionalData: Optional[str]
+    style : Optional[str]
     
 class RegenRequest(BaseModel):
     aimodel : str
@@ -44,6 +48,12 @@ class CoverLetterRequest(BaseModel):
     resume_markdown: str
     job_description: str
     aimodel : str
+    
+class QnARequest(BaseModel):
+    resume_markdown: str
+    job_description: str
+    aimodel : str
+    question: str
 
 class PDFRecordResponse(BaseModel):
     id: int
@@ -54,6 +64,7 @@ class PDFRecordResponse(BaseModel):
     role: str
     posting_type: str
     jobDescription: str
+    additionalData: Optional[str]
 
     class Config:
         orm_mode = True
@@ -71,3 +82,13 @@ class PDFrecordUpdate(BaseModel):
     job_url: str = None
     role: str = None
     jobDescription: str = None
+    additionalData: str = None
+    
+class RelevancyRequest(BaseModel):
+    jobDescription: str
+    updatedMarkdown: str
+    aimodel: str
+    
+class CoverLetterPDF(BaseModel):
+    cover_letter: str
+    

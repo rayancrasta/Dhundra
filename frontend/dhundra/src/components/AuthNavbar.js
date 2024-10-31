@@ -4,6 +4,7 @@ import { Link , useNavigate } from "react-router-dom";
 import { Menu as MenuIcon } from '@mui/icons-material';
 import NavButton from './NavButton';
 import axios from 'axios';
+import { useUserContext } from './UserContext';
 
 const AuthNavbar = () => {
     const [drawerOpen,setDrawerOpen] = useState(false);
@@ -13,14 +14,18 @@ const AuthNavbar = () => {
         setDrawerOpen(!drawerOpen)
     }
     
+    const { setUserFullName } = useUserContext();
+
     const handleLogout = async () => {
         try {
             await axios.post('http://localhost:8000/user/logout', {}, { withCredentials: true });
+            setUserFullName("");
             navigate('/login');
         } catch (error) {
             console.error('Error logging out:', error);
         }
     };
+
     
     //Button mapping
     const buttons = [

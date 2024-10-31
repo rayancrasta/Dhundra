@@ -6,6 +6,7 @@ import { Container, Typography, Table, Box, TableBody, TableCell, TableContainer
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
+import { useUserContext } from './UserContext';
 
 const Tracker = () => {
     // Data 
@@ -30,6 +31,8 @@ const Tracker = () => {
     const [findError,setfindError] = useState("");
     const [saveError,setsaveError] = useState("");
 
+    // Get global user full name
+    const { userFullName } = useUserContext();
 
 
     const fetchHistory = async () => {
@@ -103,7 +106,7 @@ const Tracker = () => {
             const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute("download",`Resume.pdf`);
+            link.setAttribute("download",`${userFullName} Resume.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();
@@ -202,8 +205,10 @@ const Tracker = () => {
                                     <TableCell sx={{ fontWeight: 'bold' }}>Company Name</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Job URL</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Additional</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Job Description</TableCell>
                                     <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
+
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -213,6 +218,7 @@ const Tracker = () => {
                                         <TableCell>{entry.company_name}</TableCell>
                                         <TableCell>{entry.job_url}</TableCell>
                                         <TableCell>{entry.role}</TableCell>
+                                        <TableCell>{entry.additionalData}</TableCell>
                                         <TableCell>{truncateJobDescription(entry.jobDescription)}</TableCell>
                                         <TableCell>
                                             <Button onClick={() => handleEdit(entry)}>
@@ -272,6 +278,14 @@ const Tracker = () => {
                                         fullWidth
                                         value={selectedRecord.role}
                                         onChange={(e) => setSelectedRecord({ ...selectedRecord, role: e.target.value })}
+                                    />
+                                    <TextField
+                                        margin="dense"
+                                        label="Additional Data"
+                                        type="text"
+                                        fullWidth
+                                        value={selectedRecord.additionalData}
+                                        onChange={(e) => setSelectedRecord({ ...selectedRecord, additionalData: e.target.value })}
                                     />
                                     <TextField
                                         margin="dense"

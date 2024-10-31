@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useUserContext } from './UserContext';
 import {
   Container,
   Typography,
@@ -25,6 +26,8 @@ function Dashboard() {
   const [topRoles, setTopRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { userFullName } = useUserContext();
+  // console.log("Full Name: " ,userFullName)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -55,17 +58,38 @@ function Dashboard() {
     fetchData();
   }, []);
 
-  const endDate = new Date();
-  const startDate = new Date(new Date().setDate(endDate.getDate() - 90));
+  const endDate = new Date(); // Today
+  const startDate = new Date(); 
+  startDate.setMonth(endDate.getMonth() - 2); // Set start date to 3 months ago
+  startDate.setDate(1); // First day of the month
 
   const prepareHeatmapData = (data) => {
-    return data
-      .filter((item) => new Date(item.date) >= startDate && new Date(item.date) <= endDate)
-      .map((item) => ({
-        date: item.date,
-        count: item.count,
-      }));
-  };
+    const heatmapData = [];
+
+    // Create a copy of the start date to avoid mutating it
+    let currentDate = new Date(startDate);
+
+    // Loop through each date from startDate to endDate
+    while (currentDate <= endDate) {
+      // Format the current date as YYYY-MM-DD
+      const dateString = currentDate.toISOString().split('T')[0];
+
+      // Find if there is a corresponding entry in the data
+      const entry = data.find(item => item.date === dateString);
+
+      // Push the date and count (0 if not found) into the heatmapData array
+      heatmapData.push({
+        date: dateString,
+        count: entry ? entry.count : 0, // Use entry count or 0 if not found
+      });
+
+      // Move to the next day
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return heatmapData;
+};
+
 
   const preparedData = prepareHeatmapData(heatmapData);
 
@@ -96,8 +120,14 @@ function Dashboard() {
           <>
             <Card style={{ marginTop: '20px' }}>
               <CardContent>
+
+              <Typography variant="h5">
+                  Welcome <span className="gradient-box">{userFullName}</span>
+                </Typography>
+              
+
                 <Typography variant="h5">
-                  <span className="gradient-box"><strong>{jobCount}</strong></span> jobs applied
+                  You have applied for <span className="gradient-box"><strong>{jobCount}</strong></span> jobs 
                 </Typography>
               </CardContent>
             </Card>
@@ -121,7 +151,7 @@ function Dashboard() {
                           endDate={monthEndDate}
                           values={data}
                           classForValue={(value) => {
-                            if (!value) {
+                            if (!value || value.count == 0) {
                               return 'color-empty'; // No data
                             }
                             // Define your colors based on count ranges

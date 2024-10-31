@@ -11,25 +11,28 @@ import ProtectedRoute from './components/ProtectedRoute';
 import ResumeBuilder from './components/ResumeBuilder';
 import Profile from './components/Profile';
 import Tracker from './components/Tracker';
+import { UserProvider } from './components/UserContext';
 
 const App = () => (
   <ThemeProvider theme={theme} >
   <CssBaseline />
-  <Router>
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
+    <UserProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
 
-      {/* Protected Routes */}
-      <Route path="/dashboard" element={<ProtectedRoute element={Dashboard} />} />
-      <Route path="/resume-builder" element={<ProtectedRoute element={ResumeBuilder} />} />
-      <Route path="/profile" element={<ProtectedRoute element={Profile} />} />
-      <Route path="/router" element={<ProtectedRoute element={Profile} />} />
-      <Route path="/tracker" element={<ProtectedRoute element={Tracker}/> } />
+          {/* Protected Routes */}
+          <Route path="/dashboard" element={<ProtectedRoute element={Dashboard} />} />
+          <Route path="/resume-builder" element={<ProtectedRoute element={ResumeBuilder} />} />
+          <Route path="/profile" element={<ProtectedRoute element={Profile} />} />
+          <Route path="/router" element={<ProtectedRoute element={Profile} />} />
+          <Route path="/tracker" element={<ProtectedRoute element={Tracker}/> } />
 
-    </Routes>
-  </Router>
+        </Routes>
+      </Router>
+    </UserProvider>
   </ThemeProvider>
 );
 

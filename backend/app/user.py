@@ -23,7 +23,11 @@ def student_signup(user: UserCreate, db: Session = Depends(get_db)):
         if db_user:
             raise HTTPException(status_code=400, detail="Email already registered")
         
+        
+        
         create_user(db=db, user=user) # can raise error
+        
+        
         
         return {"message": "User Signup Succesful"}
     
@@ -76,7 +80,8 @@ def user_login(user: UserLogin, response: Response, db: Session = Depends(get_db
         samesite="lax"   
     )
 
-    return {"message": "Login successful"}
+    fullname = db_user.firstName+" "+db_user.lastName
+    return {"fullname": fullname}
 
 @router.post("/logout")
 def user_logout(response: Response):
@@ -143,7 +148,8 @@ def get_profile(access_token: str = Depends(get_access_token),db: Session = Depe
     
     # Return user details
     return UserProfile(firstName = user.firstName, lastName = user.lastName,
-                       email = user.email, openaitoken = user.openaitoken)
+                       email = user.email, openaitoken = user.openaitoken, resumeprompt = user.resumeprompt,
+                       coverletterprompt = user.coverletterprompt)
     
 @router.put("/profile")
 def update_profile(user_data: UserProfile, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
@@ -166,6 +172,8 @@ def update_profile(user_data: UserProfile, access_token: str = Depends(get_acces
     user.lastName = user_data.lastName
     user.email = user_data.email
     user.openaitoken = user_data.openaitoken
+    user.resumeprompt = user_data.resumeprompt
+    user.coverletterprompt = user_data.coverletterprompt
     db.commit()
     
     return {"message": "Profile updated successfully"}

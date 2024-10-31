@@ -1,89 +1,80 @@
-# Rayan Crasta  
-**Software Engineer**  
+# Rayan Crasta - Software Engineer
 
 **Email:** rayancrasta95@gmail.com  
 **Contact:** +44 7767591427  
 **Location:** Leeds, UK  
-[LinkedIn](https://linkedin.com/in/rayan-crasta/) | [Portfolio](http://rayancrasta.com) | [GitHub](https://github.com/rayancrasta)  
+**LinkedIn:** [LinkedIn Profile](https://rayancrasta.com)  
+**GitHub:** [GitHub Profile](https://github.com/rayancrasta)
 
----
+## Summary
+Dynamic software engineer adept in system design, software development, and database management. Eager to apply technical prowess to build high-performance applications with modern technologies, delivering top-quality solutions and driving innovation in collaborative team environments. Seeking challenging roles to grow professionally and make a meaningful impact in the tech industry.
 
-Dynamic software engineer adept in system design, software development, and database management. Eager to apply technical prowess to build high-performance applications with modern technologies, delivering top-quality solutions and driving innovation in collaborative team environments. Seeking challenging roles to grow professionally and make a meaningful impact in the tech industry.  
+## Work Experience
 
-## WORK EXPERIENCE  
+**Mint People**  
+*Front of House Staff & Kitchen Porter (Part Time)*  
+May 2024 – Aug 2024, UK
+- Provided customer service in restaurants and clubs, handling reservations, seating, and resolving inquiries.
+- Supported kitchen operations through dishwashing, food prep, and maintaining cleanliness.
 
-### Mint People - Front of House Staff & Kitchen Porter (Part Time)  
-**May 2024 – August 2024, United Kingdom**  
-- Provided customer service in restaurants and clubs, handling reservations, seating, and resolving inquiries.  
-- Supported kitchen operations through dishwashing, food prep, and maintaining cleanliness.  
+**Hap Solutions**  
+*Festival and Bar Staff (Part Time)*  
+June 2024 – Aug 2024, UK
+- Delivered excellent customer service at festivals and events, managed bar operations.
 
-### Hap Solutions - Festival and Bar Staff (Part Time)  
-**June 2024 – August 2024, United Kingdom**  
-- Provided excellent customer service at festivals and events.  
-- Managed bar operations, including serving drinks and handling transactions.  
+**Royal Mail**  
+*Warehouse Operative (Part Time)*  
+Nov 2023 – Dec 2023, Northampton, UK
+- Loaded/unloaded shipments and sorted items efficiently to optimize workflow.
 
-### Royal Mail - Warehouse Operative (Part Time)  
-**Nov 2023 – Dec 2023, Northampton, United Kingdom**  
-- Efficiently loaded and unloaded incoming and outgoing shipments, ensuring accuracy and timeliness in accordance with company procedures.  
-- Proficiently sorted items based on delivery locations, optimizing workflow and minimizing errors.  
+**Tata Consultancy Services**  
+*Assistant Systems Engineer (Full Time)*  
+June 2021 – Aug 2023, Mumbai, India
+- Developed bash scripts to automate the hardening process of over 100+ Linux servers for compliance based on CIS benchmarks, saving 900+ hours of manual compliance hours. Won “Best Team” award for the same.
+- Conducted security analysis on Angular and Spring Boot codebases using Checkmarx and Fortify WebInspect, identifying and mitigating critical vulnerabilities.
+- Integrated third-party antimalware and data tokenization solutions into the existing architecture.
+- Conducted manual web application security testing using OWASP ZAP and Burpsuite, identifying and addressing critical vulnerabilities, thus enhancing application security.
 
-### Tata Consultancy Services - Assistant Systems Engineer (Full Time)  
-**June 2021 – Aug 2023, Mumbai, India**  
-- Developed bash scripts to automate the hardening process of over 100+ Linux servers for compliance based on CIS benchmarks, saving 900+ hours of manual compliance hours. Won “Best Team” award for the same.  
-- Conducted security analysis on Angular and Spring Boot codebases using Checkmarx and Fortify WebInspect, identifying and mitigating critical vulnerabilities.  
-- Integrated third-party antimalware and data tokenization solutions into the existing architecture.  
-- Conducted manual web application security testing using OWASP ZAP and Burpsuite, identifying and addressing critical vulnerabilities, thus enhancing application security.  
+**Qustac Technologies Pvt. Ltd**  
+*Android Development Intern (Part Time)*  
+Mar 2020 – Jan 2021, Mumbai, India
+- Developed an Android application using Android Studio and Java, integrating TensorFlow Lite for real-time classification of explicit and non-explicit images on Android devices.
+- Integrated a streamlined machine learning model to facilitate automatic actions upon detecting explicit content within image files.
 
-### Qustac Technologies Pvt. Ltd - Android Development Intern (Part Time)  
-**March 2020 – Jan 2021, Mumbai, India**  
-- Developed an Android application using Android Studio and Java, integrating TensorFlow Lite for real-time classification of explicit and non-explicit images on Android devices.  
-- Integrated a streamlined machine learning model to facilitate automatic actions upon detecting explicit content within image files.  
-- Enhanced the user interface (UI) of the application to optimize its user experience and accessibility.  
+## Projects
 
-## PROJECTS  
+**TweetOps: Twitter-like Tweet Ingestion and Search Backend**  
+- Developed a Twitter-like backend prototype using Go, FastAPI, Kafka, PostgreSQL, and Elasticsearch.
+- Managed a dataset of 500K tweets, categorized by language, and ingested into Elasticsearch via Kafka.
+- Utilized Elasticsearch for real-time tweet search and immediate availability of ingested tweets.
+- Created user and tweet search functionalities with PostgreSQL and Elasticsearch, including pagination.
+- Developed a FastAPI service for flagging profane tweets based on a model, integrated into the ingestion process for safe search.
 
-### TweetOps: Twitter-like Tweet Ingestion and Search Backend  
-- Developed a Twitter-like backend prototype using Go, FastAPI, Kafka, PostgreSQL, and Elasticsearch.  
-- Managed a dataset of 500K tweets, categorized by language, and ingested into Elasticsearch via Kafka.  
-- Utilized Elasticsearch for real-time tweet search and immediate availability of ingested tweets.  
-- Created user and tweet search functionalities with PostgreSQL and Elasticsearch, including pagination.  
-- Developed a FastAPI service for flagging profane tweets based on a model, integrated into the ingestion process for safe search.  
+**MyShowSeat: Booking Service Backend**  
+- Developed a booking service backend prototype using Go, Redis, and PostgreSQL.
+- Implemented booking logic for seat checks, claiming, payment verification, and finalization, ensuring a seamless user experience during high traffic.
+- Utilized Go's concurrency for asynchronous processing, maintaining data integrity with PostgreSQL transactional operations and row-level locking.
+- Enhanced performance with Redis caching for seat availability, reducing database calls and improving scalability. Incorporated JWT token-based authentication for secure service access.
 
-### MyShowSeat: Booking Service Backend  
-- Developed a booking service backend prototype using Go, Redis, and PostgreSQL.  
-- Implemented booking logic for seat checks, claiming, payment verification, and finalization, ensuring a seamless user experience during high traffic.  
-- Utilized Go's concurrency for asynchronous processing, maintaining data integrity with PostgreSQL transactional operations and row-level locking.  
-- Enhanced performance with Redis caching for seat availability, reducing database calls and improving scalability. Incorporated JWT token-based authentication for secure service access.  
+**Debate Tool for Academics (Dissertation Project)**  
+- Designed a platform for managing structured debates in academic settings, incorporating gamification, quizzes, and real-time feedback.
+- Built using React.js for responsive UIs and FastAPI for backend logic, with PostgreSQL for authentication and MongoDB for debate storage.
+- Utilized Redis for real-time tracking and WebSockets for live updates during debate sessions.
+- Provided detailed post-debate analytics to help educators enhance teaching strategies.
 
-### Realtime Collaborative Whiteboard  
-- Designed a collaborative whiteboard application using Node.js where I implemented MongoDB for scalable, reliable whiteboard data storage and Redis for real-time synchronization.  
-- Leveraged WebSocket and Redis for synchronized real-time updates among users.  
-- Ensured data persistence and consistency with MongoDB replica sets.  
-- Monitored server performance using Prometheus and Grafana.  
+## Education
 
-## EDUCATION  
+**University of Leicester**  
+MSc Cloud Computing (Sept 2023 - 2024)
 
-### University of Leicester  
-**MSc Cloud Computing**  
-**Sept 2023 - 2024**  
+**Mumbai University**  
+Bachelor of Engineering, Information Technology (2021)  
+GPA: 9.42
 
-### Mumbai University  
-**Bachelor of Engineering, Information Technology**  
-**June 2021, 9.42 CGPA**  
+## Skills
 
-## SKILLS  
-
-- **Languages:** Go, Python, FastAPI, Django, Bash, JavaScript, Java, ReactJS  
-- **Databases:** PostgreSQL, MongoDB, Redis  
-- **Infrastructure:** Linux, Docker  
-- **Other Technologies:** Kafka, Elasticsearch, Prometheus, Grafana  
-- **Tools:** Postman, Burpsuite, Checkmarx, WebInspect, OWASP ZAP  
-
-## COURSES AND CERTIFICATIONS  
-
-- Working with Microservices in Go (Udemy)  
-- Working with Concurrency in Go (Udemy)  
-- CompTIA Security+  
-- DevOps Ansible (Udemy)  
-- SOC Analyst 2 from RangeForce  
-- SOC Analyst 1 from RangeForce
+**Languages:** Go, Python, FastAPI, Django, Bash, JavaScript, Java, ReactJS  
+**Databases:** PostgreSQL, MongoDB, Redis  
+**Infra:** Linux, Docker, Kubernetes, Openshift  
+**Tools:** Kafka, Elasticsearch, Prometheus, Grafana, JIRA  
+**Security:** Burpsuite, Checkmarx, WebInspect, OWASP ZAP

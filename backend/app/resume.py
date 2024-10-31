@@ -7,21 +7,26 @@ from user import get_access_token,get_email_from_cookie
 import logging
 from fastapi.responses import JSONResponse
 import openai
-from schemas import GeneratePDFReq, RegenRequest, CoverLetterRequest
+from schemas import GeneratePDFReq, RegenRequest, CoverLetterRequest,QnARequest
 from datetime import datetime
 import markdown2
 import pdfkit
-from styles import css_styles
+from styles import css_styles1, css_styles2
 import random, os , string
 from models import PDFrecord
-from pypdf import PdfReader  
-from openaiops import update_markdown_from_prompt,update_markdown_with_openai,generate_cover_letterai
+from pypdf import PdfReader , PdfWriter 
+from openaiops import check_relevancy,update_markdown_from_prompt,update_markdown_with_openai,generate_cover_letterai,generate_answer
 from typing import List
 from sqlalchemy import or_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel, ValidationError
-from schemas import PDFRecordResponse, PDFHistoryResponse ,PDFrecordUpdate
+from schemas import PDFRecordResponse, PDFHistoryResponse ,PDFrecordUpdate, RelevancyRequest,CoverLetterPDF
 from datetime import datetime
+from config import coverletter_defaultprompt,resumegeneration_defaultprompt
+import json
+from fastapi.responses import StreamingResponse
+from io import BytesIO
+from fpdf import FPDF
 
 
 router = APIRouter()
@@ -60,8 +65,14 @@ async def update_resume(file: UploadFile,
 
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
+        
+        if not user.resumeprompt:
+            resumeprompt = resumegeneration_defaultprompt
+        else:
+            resumeprompt = user.resumeprompt 
+            
         # Update resume using OpenAI
-        updated_markdown = update_markdown_with_openai(user.openaitoken, resume_markdown, job_description,model)
+        updated_markdown = await update_markdown_with_openai(user.openaitoken, resume_markdown, job_description,model,resumeprompt)
 
         # Log success
         logging.info(f"Resume successfully updated for user {user.email}")
@@ -77,10 +88,17 @@ async def update_resume(file: UploadFile,
         logging.error(f"Unexpected Error: {e}")
         raise HTTPException(status_code=500, detail="Error generating resume")
 
-def convert_markdown_to_pdf(markdown_content, output_pdf):
+def convert_markdown_to_pdf(markdown_content, output_pdf,style):
     html_content = markdown2.markdown(markdown_content)
     # Define inline CSS styles
-    full_html_content = css_styles + html_content
+    
+    theme = {
+        'style1': css_styles1,
+        'style2': css_styles2
+    }.get(style, css_styles1)  # default blue theme
+
+        
+    full_html_content = theme + html_content
     options = {
         'encoding': 'UTF-8',
         'margin-top': '0.7in',
@@ -102,6 +120,9 @@ async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_a
         if not user:
             raise HTTPException(status_code=401, detail="Unauthorized user.")
 
+        if pdfreq.style not in ['style1','style2']:
+            raise HTTPException(status_code=404, detail="Style not found")
+        
         email = user.email
         
         # Generate a unique ID for the PDF name
@@ -112,7 +133,7 @@ async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_a
         
         pdf_output_path = f'{output_dir}/{pdf_name}.pdf'
         
-        convert_markdown_to_pdf(pdfreq.markdown_content, pdf_output_path)
+        convert_markdown_to_pdf(pdfreq.markdown_content, pdf_output_path, pdfreq.style)
     
     except Exception as e:
         print("Error generating pdf: ",e)
@@ -120,6 +141,7 @@ async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_a
     try:
         # Save the record in DB
         pdfrecord = pdfreq.dict()
+        pdfrecord.pop('style')
         pdfrecord.pop('markdown_content')
         pdfrecord['email'] = email
         pdfrecord['timestamp'] = datetime.now()
@@ -186,7 +208,7 @@ async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str =
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
         
-        updated_markdown = update_markdown_from_prompt(user.openaitoken, regenRequest.updated_markdown, regenRequest.jobDescription, regenRequest.user_prompt,regenRequest.aimodel)
+        updated_markdown = await update_markdown_from_prompt(user.openaitoken, regenRequest.updated_markdown, regenRequest.jobDescription, regenRequest.user_prompt,regenRequest.aimodel)
 
         # Log success
         logging.info(f"Resume successfully updated for user {user.email}")
@@ -203,7 +225,7 @@ async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str =
         raise HTTPException(status_code=500, detail="Error generating resume from prompt")
 
 @router.post("/generate_cover_letter")
-def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+async def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -217,7 +239,13 @@ def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
         
-        cover_letter = generate_cover_letterai(user.openaitoken, cvreq.resume_markdown, cvreq.job_description,cvreq.aimodel)
+        coverletterprompt = user.coverletterprompt
+        if not user.coverletterprompt:
+            coverletterprompt = coverletter_defaultprompt
+        else: 
+            coverletterprompt = user.coverletterprompt
+                
+        cover_letter = await generate_cover_letterai(user.openaitoken, cvreq.resume_markdown, cvreq.job_description,cvreq.aimodel,coverletterprompt)
     
         return {"cover_letter": cover_letter}  
 
@@ -228,6 +256,34 @@ def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(
     except Exception as e:
         logging.error(f"Unexpected Error: {e}")
         raise HTTPException(status_code=500, detail="Error generating Cover Letter")
+
+@router.post("/qna")
+async def generate_qna_answer(qna: QnARequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Get user info
+        user = get_email_from_cookie(access_token, db)
+
+        if not user:
+            raise HTTPException(status_code=401, detail="Unauthorized user.")
+
+        if qna.aimodel not in models:
+            raise HTTPException(status_code=400, detail="Invalid Model")
+        
+        if not user.openaitoken:
+            raise HTTPException(status_code=400, detail="OpenAI token not set")
+        
+        answer = await generate_answer(user.openaitoken, qna.resume_markdown, qna.job_description,qna.aimodel,qna.question)
+    
+        return {"answer": answer}  
+
+    except HTTPException as e:
+        logging.error(f"HTTP Exception: {e.detail}")
+        raise HTTPException(status_code=e.status_code, detail=e.detail)
+
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}")
+        raise HTTPException(status_code=500, detail="Error generating answer")
+
 
 def use_openai_for_markdown(api_key,text,ai_model):
     try:
@@ -358,7 +414,8 @@ def get_history(
                 or_(
                     PDFrecord.company_name.ilike(search),
                     PDFrecord.job_url.ilike(search),
-                    PDFrecord.role.ilike(search)
+                    PDFrecord.role.ilike(search),
+                    PDFrecord.additionalData.ilike(search)
                 )
             )
 
@@ -424,6 +481,8 @@ async def update_pdf_record(record_id: int, updated_record: PDFrecordUpdate, acc
             pdf_record.role = updated_record.role
         if updated_record.jobDescription is not None:
             pdf_record.jobDescription = updated_record.jobDescription
+        if updated_record.additionalData is not None:
+            pdf_record.additionalData = updated_record.additionalData
 
         # Commit the changes to the database
         db.commit()
@@ -469,4 +528,75 @@ async def delete_resume(pdf_name: str, access_token: str = Depends(get_access_to
     except Exception as e:
         print(f"Error deleting PDF: {e}")
         raise HTTPException(status_code=500, detail="Error deleting PDF and record.")
+
+@router.post("/check_relevancy")
+async def check_relevancy_endpoint(relreq: RelevancyRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    user = get_email_from_cookie(access_token, db)
+        
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized user.")
     
+    if not user.openaitoken:
+        raise HTTPException(status_code=400, detail="OpenAI token not set")
+        
+    api_key = user.openaitoken  
+    ai_model = relreq.aimodel  
+
+    if ai_model not in models:
+            raise HTTPException(status_code=400, detail="Invalid Model")
+        
+    try:
+        relevancy_response = await check_relevancy(api_key, relreq.jobDescription, relreq.updatedMarkdown, ai_model)
+        response_data = json.loads(relevancy_response)
+        print(response_data)
+        return response_data
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=500, detail="Failed to parse the response from OpenAI.")
+    except Exception as e:
+        print(f"Error checking relevancy: {str(e)}")
+        raise HTTPException(status_code=500, detail="An error occurred while checking relevancy.")
+
+@router.post("/download_cover_letter_pdf")
+def download_cover_letter_pdf(request: CoverLetterPDF):
+    cover_letter = request.cover_letter
+    if not cover_letter:
+        raise HTTPException(status_code=400, detail="Cover letter content is empty")
+
+    # Create a PDF in memory
+    pdf = FPDF()
+    pdf.add_page()
+
+    # Set font and size
+    pdf.set_font("Arial", size=12)
+
+    # Define margin values
+    left_margin = 20   # Left margin
+    right_margin = 20  # Right margin
+    top_margin = 10    # Top margin
+    bottom_margin = 10  # Bottom margin
+
+    # Set the left margin
+    pdf.set_left_margin(left_margin)
+    # Set the right margin
+    pdf.set_right_margin(right_margin)
+
+    # Move the cursor down for top margin
+    pdf.ln(top_margin)
+
+    # Add the cover letter text with padding and justified alignment
+    pdf.multi_cell(0, 10, cover_letter, border=0, align='J')  # 'J' for justified text
+
+    # Move the cursor down for bottom margin
+    pdf.ln(bottom_margin)
+
+    # Save the PDF to a BytesIO stream
+    pdf_stream = BytesIO()
+    pdf_output = pdf.output(dest='S').encode('latin1')  # Get PDF output as bytes
+    pdf_stream.write(pdf_output)  # Write to BytesIO stream
+    pdf_stream.seek(0)  # Reset stream position to the beginning
+
+    # Return the PDF file as a downloadable response
+    response = StreamingResponse(pdf_stream, media_type="application/pdf")
+    response.headers["Content-Disposition"] = "attachment; filename=cover_letter.pdf"
+    return response

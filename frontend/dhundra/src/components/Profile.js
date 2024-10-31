@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Box } from '@mui/material';
 import AuthNavbar from './AuthNavbar';
 import UserProfileCard from './UserProfileCard';
+import CoverLetter from './CoverLetter';
 
 const Profile = () => {
     const [user, setUser] = useState(null);
@@ -29,6 +30,8 @@ const Profile = () => {
                     lastName: response.data.lastName,
                     email: response.data.email,
                     openaitoken: response.data.openaitoken || 'Token not set',
+                    resumeprompt : response.data.resumeprompt,
+                    coverletterprompt: response.data.coverletterprompt
                 });
                 setLoading(false);
             } catch (err) {

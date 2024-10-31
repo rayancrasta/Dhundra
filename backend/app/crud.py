@@ -10,6 +10,7 @@ from passlib.context import CryptContext
 from models import User,Shortcuts
 import bcrypt
 from utils import get_password_hash
+from config import resumegeneration_defaultprompt,coverletter_defaultprompt
 
 def create_user(db: Session, user: UserCreate):
     try:
@@ -18,7 +19,9 @@ def create_user(db: Session, user: UserCreate):
         db_user = User(firstName=user.firstName, 
                     lastName=user.lastName,
                     email=user.email,
-                    password=hashed_password)
+                    password=hashed_password,
+                    resumeprompt=resumegeneration_defaultprompt,
+                    coverletterprompt=coverletter_defaultprompt)
         
         db.add(db_user)
         db.commit()

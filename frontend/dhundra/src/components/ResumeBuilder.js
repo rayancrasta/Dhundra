@@ -10,6 +10,7 @@ import { Container, Grid } from "@mui/material";
 import CoverLetter from './CoverLetter';
 import { UploadFile } from '@mui/icons-material';
 import UploadPDF from './UploadPDF';
+import QnA from './QnA';
 
 
 const ResumeBuilder = () => {
@@ -23,6 +24,8 @@ const ResumeBuilder = () => {
 
     //Results
     const [updatedMarkdown,setUpdatedMarkdown] = useState("");
+    const [relevancyScore, setRelevancyScore] = useState('');
+    const [reasoning, setReasoning] = useState('');
     
     // Shortcut copy menu
     const [snackbarOpen,setSnackbarOpen] = useState(false);  // Copied message
@@ -51,6 +54,8 @@ const ResumeBuilder = () => {
                         setSelectedModel={setSelectedModel}
                         setShowForm={setShowForm}
                         setUpdatedMarkdown={setUpdatedMarkdown}
+                        setRelevancyScore={setRelevancyScore}
+                        setReasoning={setReasoning}
                     />
 
                     <UploadPDF 
@@ -66,7 +71,10 @@ const ResumeBuilder = () => {
                         <ResumePreview updatedMarkdown={updatedMarkdown} 
                         onUpdatedMarkdownChange={setUpdatedMarkdown} 
                         jobDescription={jobDescription} showForm={showForm} 
-                        aimodel={selectedModel}/>
+                        aimodel={selectedModel}
+                        relevancyScore={relevancyScore} setRelevancyScore={setRelevancyScore}
+                        reasoning={reasoning} setReasoning={setReasoning}
+                        />
 
                         {showForm && (
                             <div>
@@ -81,8 +89,18 @@ const ResumeBuilder = () => {
                                 aimodel={selectedModel}
                                 copyToClipboard={copyToClipboard}
                             />
+
+                            <QnA 
+                            jobDescription={jobDescription}
+                            updatedMarkdown={updatedMarkdown}
+                            aimodel={selectedModel}
+                            copyToClipboard={copyToClipboard}
+                            />
+
                                 </div>
                                 )}
+
+                            
                     </Grid>
                 </Grid>
             </Container>

@@ -68,7 +68,7 @@ const ReIterate = ({jobDescription,updatedMarkdown,setUpdatedMarkdown,aimodel}) 
             />
 
             <Button variant="contained" onClick={onGenerateNewResume} sx={{ textTransform: 'none', borderRadius: '5px' }}>
-            Generate
+            Update ✨
             </Button>
 
             {loading && (
