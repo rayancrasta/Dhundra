@@ -5,7 +5,7 @@ import { Box } from '@mui/material';
 import AuthNavbar from './AuthNavbar';
 import UserProfileCard from './UserProfileCard';
 import CoverLetter from './CoverLetter';
-
+import Footer from './Footer';
 const Profile = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -98,6 +98,7 @@ const Profile = () => {
                     isTokenValid={isTokenValid}
                 />
             </Box>
+            <Footer/>
         </div>
     );
 };

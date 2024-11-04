@@ -22,7 +22,6 @@ function Footer() {
 }
 
 const footerStyle = {
-  position: 'fixed',
   bottom: 0,
   width: '100%',
   textAlign: 'center',

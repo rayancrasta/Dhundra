@@ -11,6 +11,7 @@ import CoverLetter from './CoverLetter';
 import { UploadFile } from '@mui/icons-material';
 import UploadPDF from './UploadPDF';
 import QnA from './QnA';
+import Footer from './Footer';
 
 
 const ResumeBuilder = () => {
@@ -110,7 +111,7 @@ const ResumeBuilder = () => {
                 onClose={() => setSnackbarOpen(false)}
                 message={snackbarMessage}
             />
-
+            <Footer />
         </div>
     );
 };

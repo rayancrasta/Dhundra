@@ -27,6 +27,8 @@ import json
 from fastapi.responses import StreamingResponse
 from io import BytesIO
 from fpdf import FPDF
+from io import StringIO
+import csv
 
 
 router = APIRouter()
@@ -559,44 +561,194 @@ async def check_relevancy_endpoint(relreq: RelevancyRequest,access_token: str = 
 
 @router.post("/download_cover_letter_pdf")
 def download_cover_letter_pdf(request: CoverLetterPDF):
-    cover_letter = request.cover_letter
-    if not cover_letter:
-        raise HTTPException(status_code=400, detail="Cover letter content is empty")
+    try:
+        # Validate cover letter content
+        cover_letter = request.cover_letter
+        if not cover_letter:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cover letter content is empty")
 
-    # Create a PDF in memory
-    pdf = FPDF()
-    pdf.add_page()
+        # Create a PDF in memory
+        pdf = FPDF()
+        pdf.add_page()
 
-    # Set font and size
-    pdf.set_font("Arial", size=12)
+        pdf.set_font("Arial", size=12)
+       
+        # Define margin values
+        left_margin = 20   # Left margin
+        right_margin = 20  # Right margin
+        top_margin = 10    # Top margin
+        bottom_margin = 10 # Bottom margin
 
-    # Define margin values
-    left_margin = 20   # Left margin
-    right_margin = 20  # Right margin
-    top_margin = 10    # Top margin
-    bottom_margin = 10  # Bottom margin
+        # Set margins
+        pdf.set_left_margin(left_margin)
+        pdf.set_right_margin(right_margin)
 
-    # Set the left margin
-    pdf.set_left_margin(left_margin)
-    # Set the right margin
-    pdf.set_right_margin(right_margin)
+        # Move the cursor down for top margin
+        pdf.ln(top_margin)
 
-    # Move the cursor down for top margin
-    pdf.ln(top_margin)
+        # Add the cover letter text with padding and justified alignment
+        try:
+            pdf.multi_cell(0, 10, cover_letter, border=0, align='J')  # 'J' for justified text
+        except Exception as e:
+            logging.error("Error adding content to PDF",e)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error generating PDF")
 
-    # Add the cover letter text with padding and justified alignment
-    pdf.multi_cell(0, 10, cover_letter, border=0, align='J')  # 'J' for justified text
+        # Move the cursor down for bottom margin
+        pdf.ln(bottom_margin)
 
-    # Move the cursor down for bottom margin
-    pdf.ln(bottom_margin)
+        # Save the PDF to a BytesIO stream
+        pdf_stream = BytesIO()
+        try:
+            pdf_output = pdf.output(dest='S').encode('latin1')  # Get PDF output as bytes
+            pdf_stream.write(pdf_output)  # Write to BytesIO stream
+            pdf_stream.seek(0)  # Reset stream position to the beginning
+        except Exception as e:
+            logging.error("Error generating PDF",e)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error generating PDF")
+        # Return the PDF file as a downloadable response
+        response = StreamingResponse(pdf_stream, media_type="application/pdf")
+        response.headers["Content-Disposition"] = "attachment; filename=cover_letter.pdf"
+        return response
 
-    # Save the PDF to a BytesIO stream
-    pdf_stream = BytesIO()
-    pdf_output = pdf.output(dest='S').encode('latin1')  # Get PDF output as bytes
-    pdf_stream.write(pdf_output)  # Write to BytesIO stream
-    pdf_stream.seek(0)  # Reset stream position to the beginning
+    except HTTPException as e:
+        raise e  # Re-raise HTTP exceptions for specific feedback to client
+    except Exception as e:
+        # Catch all other unexpected errors
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {str(e)}")
 
-    # Return the PDF file as a downloadable response
-    response = StreamingResponse(pdf_stream, media_type="application/pdf")
-    response.headers["Content-Disposition"] = "attachment; filename=cover_letter.pdf"
-    return response
+@router.get("/export_csv")
+def download_csv(access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+    try:
+        # Check user authentication
+        user = get_email_from_cookie(access_token, db)
+        if not user:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized user.")
+        email = user.email
+
+        # Query to filter records by email
+        try:
+            records = db.query(PDFrecord).filter(PDFrecord.email == email).all()
+            if not records:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No records found.")
+        except SQLAlchemyError as se:
+            logging.error("Database error: ",e)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error exporting data as csv")
+
+        # Create an in-memory string buffer to hold the CSV data
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+
+        # Write the header row, excluding `id` and `email`
+        csv_writer.writerow([
+            "pdfname", "timestamp", "company_name", "job_url", 
+            "role", "posting_type", "jobDescription", "additionalData"
+        ])
+
+        # Write data rows
+        for record in records:
+            csv_writer.writerow([
+                record.pdfname,
+                record.timestamp,
+                record.company_name,
+                record.job_url,
+                record.role,
+                record.posting_type,
+                record.jobDescription,
+                record.additionalData
+            ])
+
+        # Move to the start of the file
+        csv_file.seek(0)
+
+        # Return as a streaming response for download
+        response = StreamingResponse(
+            iter([csv_file.getvalue()]),
+            media_type="text/csv"
+        )
+        response.headers["Content-Disposition"] = "attachment; filename=pdf_records.csv"
+        return response
+    
+    except HTTPException as e:
+        raise e  # Re-raise HTTP exceptions to return them to the client directly
+    except Exception as e:
+        # Catch any other unexpected errors
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {str(e)}")
+
+@router.post("/import_csv")
+def import_csv(
+    access_token: str = Depends(get_access_token),
+    db: Session = Depends(get_db),
+    file: UploadFile = File(...)
+):
+    user = get_email_from_cookie(access_token, db)
+    
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized user.")
+    email = user.email
+
+    # Check file type
+    if file.content_type != "text/csv":
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid file type. Please upload a CSV file.")
+    
+    # Read and parse the CSV file
+    try:
+        content = file.file.read().decode("utf-8")
+        csv_file = StringIO(content)
+        csv_reader = csv.DictReader(csv_file)
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Failed to read CSV file: {str(e)}")
+    
+    # Validate required fields
+    required_fields = {"pdfname", "timestamp", "company_name", "job_url", "role", "posting_type", "jobDescription", "additionalData"}
+    if not required_fields.issubset(csv_reader.fieldnames):
+        missing_fields = ", ".join(required_fields)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"CSV file is missing required columns. Fields required are: {missing_fields}"
+        )
+
+    records = []
+    for row in csv_reader:
+        try:
+            # Parse and validate timestamp (assuming ISO format in this example)
+            timestamp = datetime.fromisoformat(row["timestamp"])
+            
+            # Create PDFrecord instance
+            record = PDFrecord(
+                email=email,
+                pdfname=row["pdfname"],
+                timestamp=timestamp,
+                company_name=row["company_name"],
+                job_url=row["job_url"],
+                role=row["role"],
+                posting_type=row["posting_type"],
+                jobDescription=row["jobDescription"],
+                additionalData=row["additionalData"]
+            )
+            records.append(record)
+        
+        except ValueError as ve:
+            # Handle timestamp parsing errors
+            logging.error("Invalid timestamp error: ",str(ve))
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid timestamp format in row: {row}")
+        
+        except KeyError as ke:
+            # Handle missing columns
+            logging.error("Missing field error: ",ke)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Missing field in row: {row}")
+        
+        except Exception as e:
+            # Handle other row-level errors
+            logging.error("Error processing row ",row,e)
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error processing row: {row}")
+
+    # Bulk insert records
+    try:
+        db.add_all(records)
+        db.commit()
+    except SQLAlchemyError as se:
+        db.rollback()
+        logging.error("Error saving ind database: ",se)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error saving data in database")
+    
+    return {"message": "CSV data imported successfully", "record_count": len(records)}

@@ -2,13 +2,28 @@ import React, { useEffect, useState } from 'react';
 import AuthNavbar from './AuthNavbar';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom'; 
-import { Container, Typography, Table, Box, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Grid2, TablePagination, Dialog, DialogActions, DialogContent, DialogTitle} from "@mui/material";
+import { Container, Typography, Table, Box, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button, TextField, Grid, TablePagination, Dialog, DialogActions, DialogContent, DialogTitle} from "@mui/material";
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useUserContext } from './UserContext';
+import Footer from './Footer';
+import { makeStyles } from '@mui/styles';
+
+const useStyles = makeStyles((theme) => ({
+    pagination: {
+      display: 'flex',
+      justifyContent: 'flex-end',
+      marginTop: theme.spacing(2),
+    },
+    footer: {
+      marginTop: theme.spacing(4),
+    },
+  }));
+
 
 const Tracker = () => {
+    const classes = useStyles();
     // Data 
     const [history, setHistory] = useState([]);
 
@@ -30,9 +45,47 @@ const Tracker = () => {
     //Error pages
     const [findError,setfindError] = useState("");
     const [saveError,setsaveError] = useState("");
-
+    const [importError,setimportError] = useState("");
     // Get global user full name
     const { userFullName } = useUserContext();
+
+    // Import CSV dialog state
+    const [openImportDialog, setOpenImportDialog] = useState(false);
+    const [csvFile, setCsvFile] = useState(null);
+    
+    const handleImportCSV = async () => {
+        setimportError("");
+        if (csvFile) {
+            const formData = new FormData();
+            formData.append('file', csvFile);
+
+            try {
+                await axios.post("http://localhost:8000/resume/import_csv", formData, {
+                    withCredentials: true,
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                fetchHistory(); // Refresh the history after import
+                setOpenImportDialog(false); // Close the dialog
+                setCsvFile(null); // Reset the file input
+            } catch (error) {
+                if (error.response && error.response.data && error.response.data.detail) {
+                    setimportError(error.response.data.detail); // Set the upload error with detail from response
+                } else {
+                    setimportError("Error importing CSV"); // Fallback error message
+                }
+    
+                console.error("Error importing CSV: ", error);
+            }
+
+        }
+    };
+
+    // Function to handle file selection
+    const handleFileChange = (event) => {
+        setCsvFile(event.target.files[0]);
+    };
 
 
     const fetchHistory = async () => {
@@ -98,6 +151,7 @@ const Tracker = () => {
     };
 
     const handleDownload = async (pdfPath) => {
+        setfindError("");
         try {
             const response = await axios.get(`http://localhost:8000/resume/download-resume/${pdfPath}`,{ withCredentials: true,
                 responseType: "blob",
@@ -121,6 +175,7 @@ const Tracker = () => {
     };
 
     const handleDelete = async (pdfPath) => {
+        setfindError("");
         try {
             await axios.delete(`http://localhost:8000/resume/delete_resume/${pdfPath}`,{ withCredentials: true });
             setHistory(history.filter(entry => entry.pdfname !== pdfPath));
@@ -144,6 +199,33 @@ const Tracker = () => {
         setPage(0); // Reset to the first page when changing rows per page
     };
 
+    const handleExportCSV = async () => {
+        setfindError("");
+        try {
+            const response = await axios.get("http://localhost:8000/resume/export_csv", {
+                withCredentials: true,
+                responseType: "blob",  // Ensures the response is a Blob
+            });
+    
+            // Create a Blob URL for the CSV data
+            const url = window.URL.createObjectURL(new Blob([response.data], { type: "text/csv" }));
+    
+            // Create a temporary link element to trigger download
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "pdf_records.csv";  // Set download filename
+            document.body.appendChild(link);
+            link.click();
+    
+            // Clean up
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            setfindError("Error exporting CSV");  // Fallback error message
+            console.error("Error exporting CSV:", error);
+        }
+    };
+    
     const formatTimestamp = (timestamp) => {
         return new Date(timestamp).toLocaleString(); // Converts to a human-readable string
     };
@@ -151,12 +233,12 @@ const Tracker = () => {
     return (
         <div>
             <AuthNavbar />
-            <Container>
+            <Container >
                 <Typography variant="h6" gutterBottom>
                     Resume History
                 </Typography>
 
-                <Grid2 sx={{ marginBottom: 2 }}>
+                <Grid sx={{ marginBottom: 2 }}>
                     <TextField
                         variant="outlined"
                         placeholder="Search..."
@@ -181,6 +263,18 @@ const Tracker = () => {
                         sx={{ marginRight: 2, marginLeft: 2 }}
                     />
 
+                    <Box sx={{ paddingTop: 1}}> 
+                        <Button 
+                        variant="outlined"
+                        sx={{ marginRight: 1}} 
+                        onClick={handleExportCSV}
+                        > Export CSV</Button>
+
+                        <Button 
+                            variant="outlined"
+                            onClick={() => setOpenImportDialog(true)} // Open Import dialog
+                        >Import CSV</Button>
+                    </Box>
 
                     <Box sx={{padding: 2}}>    
                         <Typography variant="p"  sx={{ color: 'green' }}>
@@ -317,10 +411,42 @@ const Tracker = () => {
                             </Button>
                         </DialogActions>
                     </Dialog>
-                </Grid2>
+
+                    <Dialog open={openImportDialog} onClose={() => setOpenImportDialog(false)}>
+                        <DialogTitle>Import CSV File</DialogTitle>
+                        <DialogContent>
+                            <input 
+                                type="file" 
+                                accept=".csv"
+                                onChange={handleFileChange} 
+                            />
+                            {importError && (
+                                <Box sx={{ padding: 2 }}>
+                                    <Typography variant="p" sx={{ color: 'red' }}>
+                                        {importError}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={() => { 
+                                setimportError("");
+                                setOpenImportDialog(false)}} color="primary">
+                                Cancel
+                            </Button>
+                            <Button onClick={handleImportCSV} color="primary">
+                                Import
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+
+
+                </Grid>
             </Container>
+            <Footer/>
         </div>
+        
     );
-}
+};
 
 export default Tracker;

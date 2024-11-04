@@ -56,14 +56,14 @@ class QnARequest(BaseModel):
     question: str
 
 class PDFRecordResponse(BaseModel):
-    id: int
-    pdfname: str
-    timestamp: datetime
-    company_name: str
-    job_url: str
-    role: str
-    posting_type: str
-    jobDescription: str
+    id: Optional[int]
+    pdfname: Optional[str]
+    timestamp: Optional[datetime]
+    company_name: Optional[str]
+    job_url: Optional[str]
+    role: Optional[str]
+    posting_type: Optional[str]
+    jobDescription: Optional[str]
     additionalData: Optional[str]
 
     class Config:
@@ -78,11 +78,11 @@ class PDFHistoryResponse(BaseModel):
         orm_mode = True
     
 class PDFrecordUpdate(BaseModel):
-    company_name: str = None
-    job_url: str = None
-    role: str = None
-    jobDescription: str = None
-    additionalData: str = None
+    company_name: Optional[str] = None
+    job_url: Optional[str] = None
+    role: Optional[str] = None
+    jobDescription: Optional[str] = None
+    additionalData: Optional[str] = None
     
 class RelevancyRequest(BaseModel):
     jobDescription: str

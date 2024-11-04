@@ -47,6 +47,4 @@ class PDFrecord(Base):
     jobDescription = Column(String, nullable=True)  # Changed to snake_case
     additionalData = Column(String,nullable=True)
     
-    relevancy = Column(String,nullable=True) # new addition for resume relevancy to JD
-    
     user = relationship("User", back_populates="pdf_records")
