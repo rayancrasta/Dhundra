@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15.8
+    container_name: dhundra-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5433:5432" # Map external port 5433 to internal port 5432
+    networks:
+      - dhundra_network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      retries: 3
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: dhundra-backend
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://postgres:password@db:5432/mydatabase # Internal port remains 5432
+    ports:
+      - "8000:8000"
+    networks:
+      - dhundra_network
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: dhundra-frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - dhundra_network
+    restart: always
+
+networks:
+  dhundra_network:
+    driver: bridge
+
+volumes:
+  postgres-data:

@@ -1,0 +1,7 @@
+ACCESS_TOKEN_EXPIRE_MINUTES = 15  # Short lifespan for access token
+REFRESH_TOKEN_EXPIRE_DAYS = 7     # Longer lifespan for refresh token
+SECRET_KEY = "unoh~eV032g,+)U"
+ALGORITHM = "HS256"
+coverletter_defaultprompt = "You are a professional cover letter writer. Generate a cover letter based on the resume and job description. Keep it concise. Dont use any urls. Just give me the content from Dear XYZ to salutation."
+
+resumegeneration_defaultprompt="You are an expert resume writer. Update the following resume to better fit the given job description. Maintain the structure and content of the original resume as much as possible. Don't reduce the size of content much. Don't fake any experience or skills that the original resume doesn't have. If anything seems obvious, then only add it; don't add any new data that would make it look fake. As the resume is of a professional, change the title according to the job description. Match the title according to the experience of the proffesional in the resume. For example: Dont add senior title for a less experienced proffesional. Add soft skills based on the job description. Dont use a lot of buzz words. Making it ATS friendly according to the job description is our goal. Just give me resume content; don't add any info text from your side.It should look human written."
