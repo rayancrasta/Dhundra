@@ -21,7 +21,7 @@ from sqlalchemy import or_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from pydantic import BaseModel, ValidationError
 from schemas import PDFRecordResponse, PDFHistoryResponse ,PDFrecordUpdate, RelevancyRequest,CoverLetterPDF
-from datetime import datetime
+from datetime import datetime,timedelta
 from config import coverletter_defaultprompt,resumegeneration_defaultprompt
 import json
 from fastapi.responses import StreamingResponse
@@ -35,8 +35,8 @@ router = APIRouter()
 
 models = ['gpt-4o','gpt-4o-mini','gpt-4','gpt-3.5-turbo']
 
-@router.post("/update_resume")
-async def update_resume(file: UploadFile, 
+@router.post("/update_resume") #Resume generative AI part 
+def update_resume(file: UploadFile, 
                         job_description: str = Form(...),
                         model: str = Form(...),
                         access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
@@ -50,7 +50,7 @@ async def update_resume(file: UploadFile,
             raise HTTPException(status_code=401, detail="Unauthorized user.")
 
         # Read resume content
-        resume_content = await file.read()
+        resume_content = file.file.read()
         if not resume_content:
             raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
@@ -74,7 +74,7 @@ async def update_resume(file: UploadFile,
             resumeprompt = user.resumeprompt 
             
         # Update resume using OpenAI
-        updated_markdown = await update_markdown_with_openai(user.openaitoken, resume_markdown, job_description,model,resumeprompt)
+        updated_markdown = update_markdown_with_openai(user.openaitoken, resume_markdown, job_description,model,resumeprompt)
 
         # Log success
         logging.info(f"Resume successfully updated for user {user.email}")
@@ -114,7 +114,7 @@ def generate_random_number_string(length=10):
     return ''.join(random.choices(string.digits, k=length))   
                 
 @router.post("/generate-pdf")
-async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -160,7 +160,7 @@ async def generate_pdf(pdfreq: GeneratePDFReq, access_token: str = Depends(get_a
         raise HTTPException(status_code=500, detail="Error Generating PDF")
     
 @router.get("/download-resume/{pdf_name}")
-async def download_resume(pdf_name: str,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def download_resume(pdf_name: str,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -195,7 +195,7 @@ async def download_resume(pdf_name: str,access_token: str = Depends(get_access_t
         raise HTTPException(status_code=500, detail="Error Downloading PDF")
 
 @router.post("/regen-resume")
-async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -210,7 +210,7 @@ async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str =
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
         
-        updated_markdown = await update_markdown_from_prompt(user.openaitoken, regenRequest.updated_markdown, regenRequest.jobDescription, regenRequest.user_prompt,regenRequest.aimodel)
+        updated_markdown = update_markdown_from_prompt(user.openaitoken, regenRequest.updated_markdown, regenRequest.jobDescription, regenRequest.user_prompt,regenRequest.aimodel)
 
         # Log success
         logging.info(f"Resume successfully updated for user {user.email}")
@@ -227,7 +227,7 @@ async def regen_resume_from_prompt(regenRequest:RegenRequest,access_token: str =
         raise HTTPException(status_code=500, detail="Error generating resume from prompt")
 
 @router.post("/generate_cover_letter")
-async def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -247,7 +247,7 @@ async def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = De
         else: 
             coverletterprompt = user.coverletterprompt
                 
-        cover_letter = await generate_cover_letterai(user.openaitoken, cvreq.resume_markdown, cvreq.job_description,cvreq.aimodel,coverletterprompt)
+        cover_letter = generate_cover_letterai(user.openaitoken, cvreq.resume_markdown, cvreq.job_description,cvreq.aimodel,coverletterprompt)
     
         return {"cover_letter": cover_letter}  
 
@@ -260,7 +260,7 @@ async def generate_cover_letter(cvreq: CoverLetterRequest,access_token: str = De
         raise HTTPException(status_code=500, detail="Error generating Cover Letter")
 
 @router.post("/qna")
-async def generate_qna_answer(qna: QnARequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def generate_qna_answer(qna: QnARequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         # Get user info
         user = get_email_from_cookie(access_token, db)
@@ -274,7 +274,7 @@ async def generate_qna_answer(qna: QnARequest,access_token: str = Depends(get_ac
         if not user.openaitoken:
             raise HTTPException(status_code=400, detail="OpenAI token not set")
         
-        answer = await generate_answer(user.openaitoken, qna.resume_markdown, qna.job_description,qna.aimodel,qna.question)
+        answer = generate_answer(user.openaitoken, qna.resume_markdown, qna.job_description,qna.aimodel,qna.question)
     
         return {"answer": answer}  
 
@@ -338,7 +338,7 @@ def use_openai_for_markdown(api_key,text,ai_model):
         raise HTTPException(status_code=500, detail="Unexpected Error occured")
 
 @router.post("/get_markdown")
-async def upload_pdf(file: UploadFile = File(...),
+def upload_pdf(file: UploadFile = File(...),
                     model: str = Form(...),
                     access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
@@ -354,7 +354,7 @@ async def upload_pdf(file: UploadFile = File(...),
         # Save the uploaded file temporarily
         file_location = f"temp/{file.filename}"
         with open(file_location, "wb") as f:
-            f.write(await file.read())
+            f.write(file.file.read())
 
         # Extract text from the PDF using pypdf
         reader = PdfReader(file_location)
@@ -431,7 +431,7 @@ def get_history(
 
         if toDate:
             try:
-                to_date_obj = datetime.strptime(toDate, '%Y-%m-%d')
+                to_date_obj = datetime.strptime(toDate, '%Y-%m-%d') + timedelta(days=1) - timedelta(seconds=1)
                 filters.append(PDFrecord.timestamp <= to_date_obj)
             except ValueError:
                 raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid toDate format")
@@ -461,7 +461,7 @@ def get_history(
 
 # Endpoint to update a specific PDFrecord
 @router.put("/history/{record_id}")
-async def update_pdf_record(record_id: int, updated_record: PDFrecordUpdate, access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
+def update_pdf_record(record_id: int, updated_record: PDFrecordUpdate, access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
     try:
         user = get_email_from_cookie(access_token, db)
         
@@ -501,7 +501,7 @@ async def update_pdf_record(record_id: int, updated_record: PDFrecordUpdate, acc
         raise HTTPException(status_code=500, detail=f"Error saving the record")
     
 @router.delete("/delete_resume/{pdf_name}")
-async def delete_resume(pdf_name: str, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def delete_resume(pdf_name: str, access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     try:
         user = get_email_from_cookie(access_token, db)
 
@@ -532,7 +532,7 @@ async def delete_resume(pdf_name: str, access_token: str = Depends(get_access_to
         raise HTTPException(status_code=500, detail="Error deleting PDF and record.")
 
 @router.post("/check_relevancy")
-async def check_relevancy_endpoint(relreq: RelevancyRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
+def check_relevancy_endpoint(relreq: RelevancyRequest,access_token: str = Depends(get_access_token), db: Session = Depends(get_db)):
     user = get_email_from_cookie(access_token, db)
         
     if not user:
@@ -548,7 +548,7 @@ async def check_relevancy_endpoint(relreq: RelevancyRequest,access_token: str = 
             raise HTTPException(status_code=400, detail="Invalid Model")
         
     try:
-        relevancy_response = await check_relevancy(api_key, relreq.jobDescription, relreq.updatedMarkdown, ai_model)
+        relevancy_response = check_relevancy(api_key, relreq.jobDescription, relreq.updatedMarkdown, ai_model)
         response_data = json.loads(relevancy_response)
         print(response_data)
         return response_data
@@ -588,7 +588,7 @@ def download_cover_letter_pdf(request: CoverLetterPDF):
 
         # Add the cover letter text with padding and justified alignment
         try:
-            pdf.multi_cell(0, 10, cover_letter, border=0, align='J')  # 'J' for justified text
+            pdf.multi_cell(0, 6, cover_letter, border=0, align='J')  # 'J' for justified text
         except Exception as e:
             logging.error("Error adding content to PDF",e)
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error generating PDF")

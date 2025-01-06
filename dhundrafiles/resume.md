@@ -3,10 +3,18 @@
 **Email**: [rayancrasta95@gmail.com](mailto:rayancrasta95@gmail.com) | **Contact**: +44 7767591427  
 **Location**: Leeds, UK | [LinkedIn](https://linkedin.com/in/rayan-crasta/) | [http://rayancrasta.com](https://rayancrasta.com) | [GitHub](https://github.com/rayancrasta)
 
+**Visa**: Graduate Visa till December 2026
+
 #### Summary
 Dynamic software engineer adept in system design, software development, and database management. Eager to apply technical prowess to build high-performance applications with modern technologies, delivering top-quality solutions and driving innovation in collaborative team environments. Seeking challenging roles to grow professionally and make a meaningful impact in the tech industry.
 
 #### Work Experience
+
+**Primark** - Retail Assistant
+*Nov 2024 – Present, UK*
+
+- Delivered exceptional customer service by assisting shoppers with inquiries, product selections, and transactions in a fast-paced retail environment.
+- Efficiently handled point-of-sale transactions and resolved customer concerns to enhance the shopping experience.
 
 **Mint People** - Front of House Staff & Kitchen Porter (Part Time)  
 *May 2024 – Aug 2024, UK*  
@@ -19,11 +27,6 @@ Dynamic software engineer adept in system design, software development, and data
 *June 2024 – Aug 2024, UK*  
 
 - Delivered excellent customer service at festivals and events, managed bar operations.
-
-**Royal Mail** – Warehouse Operative (Part Time)  
-*Nov 2023 – Dec 2023, Northampton, UK*  
-
-- Loaded/unloaded shipments and sorted items efficiently to optimize workflow.
 
 **Tata Consultancy Services** – Assistant Systems Engineer (Full Time)  
 *June 2021 – Aug 2023, Mumbai, India*  
@@ -73,8 +76,8 @@ Dynamic software engineer adept in system design, software development, and data
 
 #### Skills
 
-- **Languages**: Go, Python, FastAPI, Django, Bash, JavaScript, Java, ReactJS  
+- **Languages**: Go, Python, FastAPI, Bash, JavaScript, Java, Django, ReactJS  
 - **Databases**: PostgreSQL, MongoDB, Redis  
-- **Infra**: Linux, Docker, Kubernetes, Openshift 
+- **Infra**: Linux, Docker, Kubernetes
 - **Tools**: Kafka, Elasticsearch, Prometheus, Grafana, JIRA   
 - **Security**: Burpsuite, Checkmarx, WebInspect, OWASP ZAP

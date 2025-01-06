@@ -31,6 +31,10 @@ const ResumeBuilder = () => {
     // Shortcut copy menu
     const [snackbarOpen,setSnackbarOpen] = useState(false);  // Copied message
     const [snackbarMessage,setSnackbarMessage] = useState("");
+
+    // Company name
+    const [company_name_g,setCompanyNameG] = useState('');
+
     
     const handleCopyToClipboard = (text) => {  //Clipboard
         navigator.clipboard.writeText(text);
@@ -82,6 +86,7 @@ const ResumeBuilder = () => {
                             <UpdateDetailsForm
                                 updatedMarkdown={updatedMarkdown}
                                 jobDescription={jobDescription}
+                                setCompanyNameG={setCompanyNameG}
                                 />
                             
                             <CoverLetter
@@ -89,6 +94,7 @@ const ResumeBuilder = () => {
                                 updatedMarkdown={updatedMarkdown}
                                 aimodel={selectedModel}
                                 copyToClipboard={copyToClipboard}
+                                company_name_g={company_name_g}
                             />
 
                             <QnA 

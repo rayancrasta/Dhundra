@@ -59,17 +59,38 @@ function Dashboard() {
     fetchData();
   }, []);
 
-  const endDate = new Date(); // Today
-  const startDate = new Date();
-  startDate.setMonth(endDate.getMonth() - 2); // Set start date to 2 months ago
-  startDate.setDate(1); // First day of the month
+  // const endDate = new Date(); // Today's date
+  const endDate = new Date();
+  endDate.setHours(23, 59, 59, 999);
 
+  // Set startDate to 90 days before today
+  const startDate = new Date(endDate);
+  startDate.setDate(endDate.getDate() - 90);
+  console.log("Mid Date:", startDate);
+  // Adjust startDate to be the first day of the start month
+  startDate.setDate(1); // Set it to the 1st day of that month
+  startDate.setHours(0, 0, 0, 0); // Set the time to 00:00:00 for consistency
+  
+  // Log the dates for verification
+  console.log("Start Date:", startDate);
+  console.log("End Date:", endDate);
+  
+  
   const prepareHeatmapData = (data) => {
     const heatmapData = [];
     let currentDate = new Date(startDate);
+    // console.log("Current Dateee: ",currentDate);
+    currentDate.setHours(0, 0, 0, 0);
+    // console.log("End Dateee: ",endDate);
+  
+    while (currentDate <= endDate ) {
+      currentDate.setHours(0, 0, 0, 0);
+      // console.log("Current Dateee: ",currentDate);
+      const dateString = currentDate.getFullYear() + '-' 
+      + String(currentDate.getMonth() + 1).padStart(2, '0') + '-' 
+      + String(currentDate.getDate()).padStart(2, '0');
 
-    while (currentDate <= endDate) {
-      const dateString = currentDate.toISOString().split('T')[0];
+      // console.log("Date String: ",dateString);
       const entry = data.find(item => item.date === dateString);
       heatmapData.push({
         date: dateString,
@@ -93,10 +114,14 @@ function Dashboard() {
       }
       months[monthKey].push(entry);
     });
+
     return months;
   };
 
   const monthlyData = splitDataByMonth(preparedData);
+  console.log("Monthly data ",monthlyData);
+  console.log("Prepared heatmap data",preparedData);
+  // console.log("Original data: ",heatmapData);
 
   return (
     <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
@@ -123,13 +148,17 @@ function Dashboard() {
               <CardContent>
                 <div className="heatmap-container">
                   {Object.entries(monthlyData).map(([month, data]) => {
+                    console.log("Data: ",data)
                     const monthDate = new Date(data[0].date);
                     const monthStartDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+                    monthStartDate.setHours(0,0,0,0);
                     const monthEndDate =
                       monthDate.getMonth() === new Date().getMonth() && monthDate.getFullYear() === new Date().getFullYear()
                         ? endDate
                         : new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-
+                    monthEndDate.setHours(23, 59, 59, 999);
+                    console.log("Month start date",monthStartDate);
+                    console.log("Month end date: ",monthEndDate);
                     return (
                       <div key={month} className="heatmap-item">
                         <Typography variant="h6">{month}</Typography>

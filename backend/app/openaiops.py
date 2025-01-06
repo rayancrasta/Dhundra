@@ -3,7 +3,7 @@ from openai import OpenAI
 from fastapi import HTTPException
 from config import coverletter_defaultprompt, resumegeneration_defaultprompt
 
-async def call_openai(api_key, model, messages, max_tokens=3000, temperature=0.7):
+def call_openai(api_key, model, messages, max_tokens=3000, temperature=0.7):
     try:
         openai_client = OpenAI(api_key=api_key)
         response = openai_client.chat.completions.create(
@@ -34,7 +34,7 @@ async def call_openai(api_key, model, messages, max_tokens=3000, temperature=0.7
         print(f"Unexpected error: {str(e)}")
         raise HTTPException(status_code=500, detail="Unexpected Error occurred")
 
-async def generate_cover_letterai(api_key, resume_markdown, job_description, ai_model, systemcontent):
+def generate_cover_letterai(api_key, resume_markdown, job_description, ai_model, systemcontent):
     messages = [
         {
             "role": "system",
@@ -45,9 +45,9 @@ async def generate_cover_letterai(api_key, resume_markdown, job_description, ai_
             "content": f"Resume:\n{resume_markdown}\n\nJob Description:\n{job_description}\n\nCover Letter:"
         }
     ]
-    return await call_openai(api_key, ai_model, messages)
+    return call_openai(api_key, ai_model, messages)
 
-async def generate_answer(api_key, resume_markdown, job_description, ai_model, question):
+def generate_answer(api_key, resume_markdown, job_description, ai_model, question):
     messages = [
         {
             "role": "system",
@@ -58,9 +58,9 @@ async def generate_answer(api_key, resume_markdown, job_description, ai_model, q
             "content": f"Resume:\n{resume_markdown}\n\nJob Description:\n{job_description}\n\nEmployer's Question:\n{question}\n\nAnswer:"
         }
     ]
-    return await call_openai(api_key, ai_model, messages)
+    return call_openai(api_key, ai_model, messages)
 
-async def update_markdown_with_openai(api_key, resume_markdown, job_description, ai_model, systemcontent):
+def update_markdown_with_openai(api_key, resume_markdown, job_description, ai_model, systemcontent):
     messages = [
         {
             "role": "system",
@@ -71,9 +71,9 @@ async def update_markdown_with_openai(api_key, resume_markdown, job_description,
             "content": f"Resume:\n{resume_markdown}\n\nJob Description:\n{job_description}\n\nUpdated Resume:"
         }
     ]
-    return await call_openai(api_key, ai_model, messages)
+    return call_openai(api_key, ai_model, messages)
 
-async def update_markdown_from_prompt(api_key, resume_markdown, job_description, user_prompt, ai_model):
+def update_markdown_from_prompt(api_key, resume_markdown, job_description, user_prompt, ai_model):
     messages = [
         {
             "role": "system",
@@ -84,9 +84,9 @@ async def update_markdown_from_prompt(api_key, resume_markdown, job_description,
             "content": f"Resume:\n{resume_markdown}\n\nJob Description:\n{job_description} \n\nImprovement Prompt instructions: {user_prompt} \n\nUpdated Resume:"
         }
     ]
-    return await call_openai(api_key, ai_model, messages)
+    return call_openai(api_key, ai_model, messages)
 
-async def check_relevancy(api_key, job_description, updated_markdown, ai_model):
+def check_relevancy(api_key, job_description, updated_markdown, ai_model):
     messages = [
         {
             "role": "system",
@@ -94,7 +94,7 @@ async def check_relevancy(api_key, job_description, updated_markdown, ai_model):
         },
         {
             "role": "user",
-            "content": f"Job Description:\n{job_description}\n\nUpdated Resume:\n{updated_markdown}\n\nProvide a relevancy score (Not Relevant, Little Relevant, Relevant, Very Relevant) and a short summary in the specified JSON format:"
+            "content": f"Job Description:\n{job_description}\n\nUpdated Resume:\n{updated_markdown}\n\nProvide a relevancy score strictly out of the 5 options (Not Relevant, Little Relevant, Relevant, Very Relevant, Perfect Match) and a short summary in the specified JSON format:, If job doesnt have same language as resume it should be 'Not Relevant'"
         }
     ]
-    return await call_openai(api_key, ai_model, messages)
+    return call_openai(api_key, ai_model, messages)

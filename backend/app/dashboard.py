@@ -41,9 +41,11 @@ def get_job_heatmap_data(access_token: str = Depends(get_access_token), db: Sess
 
         email = user.email
         
-        result = db.query(func.date(PDFrecord.timestamp).label("date"), func.count(PDFrecord.id).label("count"))\
-                   .filter(PDFrecord.email == email)\
-                   .group_by(func.date(PDFrecord.timestamp)).all()
+        result = db.query(func.date(PDFrecord.timestamp).label("date"),
+                        func.count(PDFrecord.id).label("count"),
+                        func.max(PDFrecord.timestamp).label("max_timestamp"))\
+                .filter(PDFrecord.email == email)\
+                .group_by(func.date(PDFrecord.timestamp)).order_by(func.max(PDFrecord.timestamp)).all()
                    
         # SELECT DATE(timestamp) AS date, COUNT(id) AS count
         # FROM pdfrecords

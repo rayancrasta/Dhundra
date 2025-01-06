@@ -1,0 +1,17 @@
+fastapi
+bcrypt
+sqlalchemy
+passlib
+logging
+openai
+uvicorn
+pydantic
+markdown2
+pdfkit
+fpdf
+pypdf
+jose
+python-multipart  # For handling file uploads
+requests  # To call any external APIs, such as OpenAI
+psycopg2-binary  # For connecting to PostgreSQL database
+aiofiles  # For async file handling, used by FastAPI

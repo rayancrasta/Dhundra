@@ -310,7 +310,7 @@ const Tracker = () => {
                                     <TableRow key={entry.id}>
                                         <TableCell>{formatTimestamp(entry.timestamp)}</TableCell>
                                         <TableCell>{entry.company_name}</TableCell>
-                                        <TableCell>{entry.job_url}</TableCell>
+                                        <TableCell>{truncateJobDescription(entry.job_url)}</TableCell>
                                         <TableCell>{entry.role}</TableCell>
                                         <TableCell>{entry.additionalData}</TableCell>
                                         <TableCell>{truncateJobDescription(entry.jobDescription)}</TableCell>

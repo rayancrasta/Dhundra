@@ -13,6 +13,11 @@ from openai import OpenAI
 
 router = APIRouter()
 
+def get_access_token(access_token: str = Cookie(None)):
+    if access_token is None:
+        raise HTTPException(status_code=401,detail="User tokens not found")
+    return access_token
+
 @router.post("/signup")
 def student_signup(user: UserCreate, db: Session = Depends(get_db)):
     try:
@@ -101,8 +106,14 @@ def verify_access_token(request: Request):
     return {"message": "Access token is valid"}
 
 @router.post("/refresh")
-def refresh_token(request: Request, response : Response, db: Session = Depends(get_db)):
+def refresh_token(request: Request, response : Response,db: Session = Depends(get_db)):
+    # Get user info
     refresh_token = request.cookies.get("refresh_token")
+    
+    user = get_email_from_cookie(refresh_token, db)
+    print(refresh_token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Unauthorized user.")
     
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Refresh token not found")
@@ -112,7 +123,11 @@ def refresh_token(request: Request, response : Response, db: Session = Depends(g
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     
     # Generate a new access token
-    access_token = create_access_token(data={"sub": payload["sub"]})
+    # access_token = create_access_token(data={"sub": payload["sub"]})
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
     
     response.set_cookie(
         key="access_token",
@@ -124,10 +139,7 @@ def refresh_token(request: Request, response : Response, db: Session = Depends(g
 
     return {"message": "Access token refreshed successfully"}
 
-def get_access_token(access_token: str = Cookie(None)):
-    if access_token is None:
-        raise HTTPException(status_code=401,detail="User tokens not found")
-    return access_token
+
     
 @router.get("/profile")
 def get_profile(access_token: str = Depends(get_access_token),db: Session = Depends(get_db)):
@@ -185,7 +197,8 @@ def get_email_from_cookie(access_token,db):
         email = payload.get("sub")
         if email is None:
             raise HTTPException(status_code=401,detail="Invalid access token")
-    except JWTError:
+    except JWTError as e:
+        print("JWT error",e)
         raise HTTPException(status_code=401,detail="Couldn't validate credentials")
     
     try:

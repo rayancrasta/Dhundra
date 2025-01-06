@@ -4,7 +4,7 @@ import { TextField, Button, Paper, Typography, Box, MenuItem, CircularProgress, 
 import DownloadIcon from '@mui/icons-material/Download';
 import { useUserContext } from './UserContext';
 
-const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
+const UpdateDetailsForm = ({ updatedMarkdown,jobDescription,setCompanyNameG }) => {
     const [companyName,setCompanyName] = useState("");
     const [jobUrl,setjobURl] = useState("");
     const [role,setRole] = useState("");
@@ -38,7 +38,7 @@ const UpdateDetailsForm = ({ updatedMarkdown,jobDescription }) => {
                 additionalData : additionalData,
                 style: style
             },{ withCredentials: true });
-
+            setCompanyNameG(companyName);
             setPdfPath(response.data.pdf_name);
             setPdfGenerationMessage("PDF is ready to be downloaded");
         } catch (error) {

@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import axios from "axios";
 import { ContentCopy, ExpandMore } from "@mui/icons-material";
 import { TextField, Button, Paper, Typography, Box, CircularProgress, Tooltip, IconButton } from "@mui/material";
+import { useUserContext } from './UserContext';
 
-const CoverLetter = ({ jobDescription, updatedMarkdown, aimodel, copyToClipboard }) => {
+const CoverLetter = ({ jobDescription, updatedMarkdown, aimodel, copyToClipboard,company_name_g }) => {
     const [coverLetter, setCoverLetter] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [coverLetterMessage, setCoverLetterMessage] = useState("");
     const [coverLetterError, setCoverLetterError] = useState(false);
     const [isVisible, setIsVisible] = useState(false); 
+    const { userFullName } = useUserContext();
 
     const handleGenerateCoverLetter = async () => {
         if (!updatedMarkdown || !jobDescription) {
@@ -51,7 +53,8 @@ const CoverLetter = ({ jobDescription, updatedMarkdown, aimodel, copyToClipboard
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', 'cover_letter.pdf');
+            // link.setAttribute('download', 'cover_letter.pdf');
+            link.setAttribute("download",`${userFullName} Cover Letter ${company_name_g}.pdf`);
             document.body.appendChild(link);
             link.click();
             link.remove();

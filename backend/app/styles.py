@@ -80,13 +80,13 @@ css_styles1 = '''
     '''
 
 css_styles2 = '''
-    <style>
+        <style>
     body {
         font-family: 'Georgia', serif; /* Elegant serif font for a classic look */
         line-height: 1.6; /* Increased line spacing for readability */
         margin: 0; /* Remove body margin */
         font-size: 16px; /* Standard font size */
-        text-align: left; /* Left-aligned text */
+        text-align: justify; /* Justify text for better alignment */
         color: #333333; /* Dark gray text for softer contrast */
         background-color: #ffffff; /* White background for clarity */
     }
@@ -95,24 +95,29 @@ css_styles2 = '''
         margin: 20px 0; /* Space above and below */
         font-weight: bold; /* Bold for emphasis */
         text-transform: uppercase; /* Uppercase for a formal touch */
+        text-align: left; /* Ensure headings are left-aligned */
     }
     h2 {
         font-size: 26px; /* Size for section titles */
         margin: 15px 0; /* Space around section titles */
         border-bottom: 1px solid #000000; /* Underline section titles */
         padding-bottom: 5px; /* Padding for underline */
+        text-align: left; /* Ensure headings are left-aligned */
     }
     h3 {
         font-size: 22px; /* Size for subsection titles */
         margin: 10px 0; /* Space around subsection titles */
+        text-align: left; /* Ensure headings are left-aligned */
     }
     h4 {
         font-size: 18px; /* Size for smaller headings */
         margin: 8px 0; /* Space around smaller headings */
+        text-align: left; /* Ensure headings are left-aligned */
     }
     ul, ol {
         margin: 0 0 10px 25px; /* Adjusted margin for lists */
         padding: 0; /* Remove padding */
+        text-align: justify; /* Justify list content */
     }
     ul {
         list-style-type: circle; /* Circle bullets for unordered lists */
@@ -122,6 +127,7 @@ css_styles2 = '''
     }
     p {
         margin: 0 0 10px; /* Margin for paragraphs */
+        text-align: justify; /* Justify paragraph text */
     }
     a {
         color: #000000; /* Black color for links */
@@ -134,19 +140,23 @@ css_styles2 = '''
         margin-bottom: 25px; /* Space between sections */
         border-top: 2px solid #000000; /* Top border for section separation */
         padding-top: 15px; /* Padding for top border */
+        text-align: justify; /* Justify section content */
     }
     .job-title {
         font-size: 18px; /* Job title size */
         font-weight: bold; /* Bold job titles */
         margin-bottom: 5px; /* Space below job title */
+        text-align: left; /* Ensure job titles are left-aligned */
     }
     .job-duration {
         font-size: 16px; /* Slightly smaller for duration */
         color: #666666; /* Medium gray for differentiation */
+        text-align: left; /* Ensure job duration is left-aligned */
     }
     .contact-info {
         margin-bottom: 15px; /* Space below contact info */
         font-style: italic; /* Italicize contact info */
+        text-align: left; /* Ensure contact info is left-aligned */
     }
     @page {
         size: A4; /* Page size */
